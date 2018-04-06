@@ -139,8 +139,7 @@ bool Memory::WriteMemory(int64_t address, int32_t size, int64_t value) {
     if (it == this->memory_page_list.end()) {
         bool result = this->AllocatePage(address);
         if (!result) {
-            DEBUG("Cannot allocate page of address %lx\n", address);
-            ASSERT(false);
+            FATAL("Cannot allocate page of address %lx\n", address);
         }
         it = this->FindPage(address);
     }

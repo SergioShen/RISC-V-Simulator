@@ -6,6 +6,7 @@
 //
 
 #include "elf_reader.h"
+#include "machine.h"
 #include <fstream>
 #include <elf.h>
 

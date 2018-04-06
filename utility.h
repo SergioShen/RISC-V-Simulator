@@ -37,4 +37,11 @@ extern bool debug_enabled;
         printf(__VA_ARGS__);                                                                      \
     }                                                                                             \
 
+
+#define FATAL(...)                                                                                \
+    {                                                                                             \
+        fprintf(stderr, __VA_ARGS__);                                                             \
+        abort();                                                                                  \
+    }                                                                                             \
+
 #endif //RISC_V_SIMULATOR_UTILITY_H

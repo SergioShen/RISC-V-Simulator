@@ -9,8 +9,6 @@
 #define RISC_V_SIMULATOR_ELF_READER_H
 
 #include "utility.h"
-#include "machine.h"
-#include <elf.h>
 
 #define EM_RISCV 0xF3
 
