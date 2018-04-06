@@ -21,7 +21,8 @@ MemoryPage::~MemoryPage() {
 
 bool MemoryPage::ReadMemory(int64_t address, int32_t size, int64_t *value) const {
     // Check if accessed address is in this block
-    ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size));
+    ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size - 1));
+    ASSERT(address % size == 0);
 
     int64_t index_in_block = address - start_address;
     DEBUG("Read memory, address %16.16lx, size %d\n", address, size);
@@ -50,7 +51,8 @@ bool MemoryPage::ReadMemory(int64_t address, int32_t size, int64_t *value) const
 
 bool MemoryPage::WriteMemory(int64_t address, int32_t size, int64_t value) const {
     // Check if accessed address is in this block
-    ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size));
+    ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size - 1));
+    ASSERT(address % size == 0);
 
     int64_t index_in_block = address - start_address;
     DEBUG("Write memory, address %16.16lx, size %d\n", address, size);
@@ -102,7 +104,8 @@ bool Memory::AllocatePage(int64_t address) {
     ASSERT(it == this->memory_page_list.end());
 
     int64_t start_address = address & (~0xFFF);
-    this->memory_page_list.insert(MemoryPage(start_address));
+    auto *new_page = new MemoryPage(start_address);
+    this->memory_page_list.insert(*new_page);
 
     return true;
 }
@@ -139,6 +142,7 @@ bool Memory::WriteMemory(int64_t address, int32_t size, int64_t value) {
             DEBUG("Cannot allocate page of address %lx\n", address);
             ASSERT(false);
         }
+        it = this->FindPage(address);
     }
 
     return it->WriteMemory(address, size, value);
