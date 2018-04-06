@@ -52,6 +52,14 @@
 #define OP_LUI 37
 #define OP_JAL 38
 
+// Instr type macro definitions
+#define INSTR_R 0
+#define INSTR_I 1
+#define INSTR_S 2
+#define INSTR_SB 3
+#define INSTR_U 4
+#define INSTR_UJ 5
+
 extern char op_strings[39][8];
 
 // Macros for decode
@@ -92,22 +100,32 @@ public:
                      * opcode is the value of 7 bits in instr code,
                      * but this is one of the OP_*** values defined above
                      */
+    int8_t instr_type;
+
+    // Decode the instruction
     void Decode();
+
+    // Print the semantic meaning of the instruction
+    void Print();
 };
 
 class Machine {
 private:
     int64_t registers[32];
-    int64_t pc;
+    int64_t reg_pc;
+    int64_t reg_prev_pc;
+    int64_t reg_addr;
     Memory *main_memory;
 
     Instruction *FetchInstruction();
 
-    void Execute();
+    void Execute(Instruction *instruction);
 
-    void AcccessMemory();
+    void ReadMemory(Instruction *instruction);
 
-    void WriteBack();
+    void WriteBack(Instruction *instruction);
+
+    void HandleSystemCall();
 
 
 public:

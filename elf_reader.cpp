@@ -30,7 +30,7 @@ bool Machine::LoadExecutableFile(const char *file_name) {
     ASSERT(elf_header.e_machine == EM_RISCV);
 
     // Set PC as program entry
-    this->pc = elf_header.e_entry;
+    this->reg_pc = elf_header.e_entry;
     DEBUG("Number of program headers: %d\n", elf_header.e_phnum);
     DEBUG("Offset to program header table: %ld\n", elf_header.e_phoff);
 
