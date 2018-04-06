@@ -15,21 +15,21 @@
 
 class MemoryPage {
 public:
-    int64 start_address;
+    int64_t start_address;
     char *content;
 
-    MemoryPage(int64 start_address);
+    MemoryPage(int64_t start_address);
 
     ~MemoryPage();
 
     // Read memory, size should be 1, 2, 4 or 8
-    bool ReadMemory(int64 address, int32 size, int64 *value) const;
+    bool ReadMemory(int64_t address, int32_t size, int64_t *value) const;
 
     // Write memory, size should be 1, 2, 4 or 8
-    bool WriteMemory(int64 address, int32 size, int64 value) const;
+    bool WriteMemory(int64_t address, int32_t size, int64_t value) const;
 
     // Check if accessed address is in this page
-    bool AddressInPage(int64 address) const;
+    bool AddressInPage(int64_t address) const;
 };
 
 bool operator<(const MemoryPage &a, const MemoryPage &b);
@@ -39,20 +39,20 @@ private:
     std::set<MemoryPage> memory_page_list;
 
     // Find the page that contains accessed address
-    std::set<MemoryPage>::iterator FindPage(int64 address);
+    std::set<MemoryPage>::iterator FindPage(int64_t address);
 
 public:
     // Allocate a page that contains given address
-    bool AllocatePage(int64 address);
+    bool AllocatePage(int64_t address);
 
     // Deallocate a page that contains given address
-    bool DeallocatePage(int64 address);
+    bool DeallocatePage(int64_t address);
 
     // Read memory, size should be 1, 2, 4 or 8
-    bool ReadMemory(int64 address, int32 size, int64 *value);
+    bool ReadMemory(int64_t address, int32_t size, int64_t *value);
 
     // Write memory, size should be 1, 2, 4 or 8
-    bool WriteMemory(int64 address, int32 size, int64 value);
+    bool WriteMemory(int64_t address, int32_t size, int64_t value);
 
 };
 
