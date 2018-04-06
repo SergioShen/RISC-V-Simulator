@@ -24,7 +24,7 @@ bool MemoryPage::ReadMemory(int64_t address, int32_t size, int64_t *value) const
     ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size));
 
     int64_t index_in_block = address - start_address;
-    DEBUG("Read memory, address %16.16lx, size %d", address, size);
+    DEBUG("Read memory, address %16.16lx, size %d\n", address, size);
 
     // Read memory
     switch (size) {
@@ -43,7 +43,7 @@ bool MemoryPage::ReadMemory(int64_t address, int32_t size, int64_t *value) const
         default:
             ASSERT(false);
     }
-    DEBUG("\tRead value = %16.16lx", *value);
+    DEBUG("\tRead value = %16.16lx\n", *value);
 
     return true;
 }
@@ -53,7 +53,7 @@ bool MemoryPage::WriteMemory(int64_t address, int32_t size, int64_t value) const
     ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size));
 
     int64_t index_in_block = address - start_address;
-    DEBUG("Write memory, address %16.16lx, size %d", address, size);
+    DEBUG("Write memory, address %16.16lx, size %d\n", address, size);
 
     // Write memory
     switch (size) {
@@ -72,7 +72,7 @@ bool MemoryPage::WriteMemory(int64_t address, int32_t size, int64_t value) const
         default:
             ASSERT(false);
     }
-    DEBUG("\tWrite value = %16.16lx", value);
+    DEBUG("\tWrite value = %16.16lx\n", value);
 
     return true;
 }
@@ -136,7 +136,7 @@ bool Memory::WriteMemory(int64_t address, int32_t size, int64_t value) {
     if (it == this->memory_page_list.end()) {
         bool result = this->AllocatePage(address);
         if (!result) {
-            DEBUG("Cannot allocate page of address %lx", address);
+            DEBUG("Cannot allocate page of address %lx\n", address);
             ASSERT(false);
         }
     }
