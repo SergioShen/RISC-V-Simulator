@@ -22,7 +22,6 @@ MemoryPage::~MemoryPage() {
 bool MemoryPage::ReadMemory(int64_t address, int32_t size, int64_t *value) const {
     // Check if accessed address is in this block
     ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size - 1));
-    ASSERT(address % size == 0);
 
     int64_t index_in_block = address - start_address;
     DEBUG("Read memory, address %16.16lx, size %d\n", address, size);
@@ -52,7 +51,6 @@ bool MemoryPage::ReadMemory(int64_t address, int32_t size, int64_t *value) const
 bool MemoryPage::WriteMemory(int64_t address, int32_t size, int64_t value) const {
     // Check if accessed address is in this block
     ASSERT(this->AddressInPage(address) && this->AddressInPage(address + size - 1));
-    ASSERT(address % size == 0);
 
     int64_t index_in_block = address - start_address;
     DEBUG("Write memory, address %16.16lx, size %d\n", address, size);
