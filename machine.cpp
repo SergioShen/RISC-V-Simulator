@@ -13,7 +13,9 @@ char op_strings[][8] = {"ADD", "MUL", "SUB", "SLL", "MULH", "SLT", "XOR", "DIV",
                         "OR", "REM", "AND", "LB", "LH", "LW", "LD", "ADDI", "SLLI", "SLTI",
                         "XORI", "SRLI", "SRAI", "ORI", "ANDI", "ADDIW", "JALR", "ECALL", "SB",
                         "SH", "SW", "SD", "BEQ", "BNE", "BLT", "BGE", "AUIPC", "LUI", "JAL",
-                        "LI", "SUBW", "ADDW", "J", "BEQZ", "BNEZ", "LWSP", "LDSP", "SWSP", "SDSP", "MV",
+                        "LI", "SUBW", "ADDW", "J", "BEQZ", "BNEZ", "LWSP", "LDSP", "SWSP", "SDSP",
+                        "MV", "BLTU", "BGEU", "JR", "SLLIW", "SRLIW", "SRAIW", "SLLW", "SRLW",
+                        "SRAW", "LBU", "LHU"
 
 };
 
@@ -49,6 +51,7 @@ inline void Instruction::DecodeIInstruction() {
     this->rd = Decode_rd(this->binary_code);
     this->funct3 = Decode_funct3(this->binary_code);
     this->rs1 = Decode_rs1(this->binary_code);
+    this->funct7 = Decode_funct7(this->binary_code);
     this->imm = Decode_imm(this->binary_code, 20, 12, 0);
     this->ImmSignExtend(12);
 }
@@ -183,6 +186,40 @@ void Instruction::Decode() {
                     default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
                 }
                 break;
+            case 0x3B:
+                this->DecodeRInstruction();
+                switch (this->funct3) {
+                    case 0x0:
+                        if (this->funct7 == 0x00) {
+                            this->op_type = OP_ADDW;
+                        } else if (this->funct7 == 0x20) {
+                            this->op_type = OP_SUBW;
+                        } else {
+                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                  this->opcode, this->funct3, this->funct7);
+                        }
+                        break;
+                    case 0x1:
+                        if (this->funct7 == 0x00) {
+                            this->op_type = OP_SLLW;
+                        } else {
+                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                  this->opcode, this->funct3, this->funct7);
+                        }
+                        break;
+                    case 0x5:
+                        if (this->funct7 == 0x00) {
+                            this->op_type = OP_SRLW;
+                        } else if (this->funct7 == 0x20) {
+                            this->op_type = OP_SRAW;
+                        } else {
+                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                  this->opcode, this->funct3, this->funct7);
+                        }
+                        break;
+                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                }
+                break;
             case 0x03:
                 this->DecodeIInstruction();
                 switch (this->funct3) {
@@ -197,6 +234,12 @@ void Instruction::Decode() {
                         break;
                     case 0x3:
                         this->op_type = OP_LD;
+                        break;
+                    case 0x4:
+                        this->op_type = OP_LBU;
+                        break;
+                    case 0x5:
+                        this->op_type = OP_LHU;
                         break;
                     default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
                 }
@@ -244,10 +287,24 @@ void Instruction::Decode() {
                 break;
             case 0x1B:
                 this->DecodeIInstruction();
-                if (this->funct3 == 0x0)
-                    this->op_type = OP_ADDIW;
-                else {
-                    FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                switch (this->funct3) {
+                    case 0x0:
+                        this->op_type = OP_ADDIW;
+                        break;
+                    case 0x1:
+                        this->op_type = OP_SLLIW;
+                        break;
+                    case 0x5:
+                        if (this->funct7 == 0x00) {
+                            this->op_type = OP_SRLIW;
+                        } else if (this->funct7 == 0x20) {
+                            this->op_type = OP_SRAIW;
+                        } else {
+                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                  this->opcode, this->funct3, this->funct7);
+                        }
+                        break;
+                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
                 }
                 break;
             case 0x67:
@@ -300,6 +357,12 @@ void Instruction::Decode() {
                     case 0x5:
                         this->op_type = OP_BGE;
                         break;
+                    case 0x6:
+                        this->op_type = OP_BLTU;
+                        break;
+                    case 0x7:
+                        this->op_type = OP_BGEU;
+                        break;
                     default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
                 }
                 break;
@@ -326,6 +389,14 @@ void Instruction::Decode() {
         switch (this->opcode) {
             case 0x0:
                 switch (this->funct3) {
+                    case 0x0:
+                        this->instr_type = INSTR_CIW;
+                        this->rd = Decode_cc_rd(this->binary_code);
+                        this->rs1 = REG_sp;
+                        this->op_type = OP_ADDI; // ADDI4SPN
+                        this->imm = Decode_imm(this->binary_code, 6, 1, 2) + Decode_imm(this->binary_code, 5, 1, 3) +
+                                    Decode_imm(this->binary_code, 11, 2, 4) + Decode_imm(this->binary_code, 7, 4, 6);
+                        break;
                     case 0x2:
                         this->instr_type = INSTR_CL;
                         this->rs1 = Decode_cc_rs1(this->binary_code);
@@ -364,7 +435,7 @@ void Instruction::Decode() {
                     case 0x0:
                         this->instr_type = INSTR_CI;
                         this->rd = Decode_c_rd(this->binary_code);
-                        this->rs1 = Decode_rs1(this->binary_code);
+                        this->rs1 = Decode_c_rs1(this->binary_code);
                         this->op_type = OP_ADDI;
                         this->imm = Decode_imm(this->binary_code, 2, 5, 0) + Decode_imm(this->binary_code, 12, 1, 5);
                         this->ImmSignExtend(6);
@@ -372,7 +443,7 @@ void Instruction::Decode() {
                     case 0x1:
                         this->instr_type = INSTR_CI;
                         this->rd = Decode_c_rd(this->binary_code);
-                        this->rs1 = Decode_rs1(this->binary_code);
+                        this->rs1 = Decode_c_rs1(this->binary_code);
                         this->op_type = OP_ADDIW;
                         this->imm = Decode_imm(this->binary_code, 2, 5, 0) + Decode_imm(this->binary_code, 12, 1, 5);
                         this->ImmSignExtend(6);
@@ -387,9 +458,20 @@ void Instruction::Decode() {
                     case 0x3:
                         this->instr_type = INSTR_CI;
                         this->rd = Decode_c_rd(this->binary_code);
-                        this->op_type = OP_LUI;
-                        this->imm = Decode_imm(this->binary_code, 2, 5, 12) + Decode_imm(this->binary_code, 12, 1, 17);
-                        this->ImmSignExtend(18);
+                        if (this->rd == 2) {
+                            this->op_type = OP_ADDI; // ADDI16SP
+                            this->rs1 = REG_sp;
+                            this->imm =
+                                    Decode_imm(this->binary_code, 6, 1, 4) + Decode_imm(this->binary_code, 2, 1, 5) +
+                                    Decode_imm(this->binary_code, 5, 1, 6) + Decode_imm(this->binary_code, 3, 2, 7) +
+                                    Decode_imm(this->binary_code, 12, 1, 9);
+                            this->ImmSignExtend(10);
+                        } else {
+                            this->op_type = OP_LUI;
+                            this->imm =
+                                    Decode_imm(this->binary_code, 2, 5, 12) + Decode_imm(this->binary_code, 12, 1, 17);
+                            this->ImmSignExtend(18);
+                        }
                         break;
                     case 0x4:
                         switch (Decode_imm(this->binary_code, 10, 2, 0)) {
@@ -524,9 +606,17 @@ void Instruction::Decode() {
                         this->rs1 = Decode_c_rs1(this->binary_code);
                         this->rs2 = Decode_c_rs2(this->binary_code);
                         if (Decode_imm(this->binary_code, 12, 1, 0) == 0) {
-                            this->op_type = OP_MV;
+                            if (this->rs2 == 0) {
+                                this->instr_type = INSTR_CR;
+                                this->op_type = OP_JR;
+                            } else
+                                this->op_type = OP_MV;
                         } else if (Decode_imm(this->binary_code, 12, 1, 0) == 1) {
-                            this->op_type = OP_ADD;
+                            if (this->rs2 == 0) {
+                                this->instr_type = INSTR_CR;
+                                this->op_type = OP_JALR;
+                            } else
+                                this->op_type = OP_ADD;
                         } else {
                             FATAL("OP Code %x, Funct4 %x not implemented\n", Decode_imm(this->binary_code, 10, 4, 0));
                         }
@@ -534,13 +624,13 @@ void Instruction::Decode() {
                     case 0x6:
                         this->instr_type = INSTR_CSS;
                         this->rs2 = Decode_c_rs2(this->binary_code);
-                        this->instr_type = OP_SWSP;
+                        this->op_type = OP_SWSP;
                         this->imm = Decode_imm(this->binary_code, 9, 4, 2) + Decode_imm(this->binary_code, 7, 2, 6);
                         break;
                     case 0x7:
                         this->instr_type = INSTR_CSS;
                         this->rs2 = Decode_c_rs2(this->binary_code);
-                        this->instr_type = OP_SDSP;
+                        this->op_type = OP_SDSP;
                         this->imm = Decode_imm(this->binary_code, 10, 3, 3) + Decode_imm(this->binary_code, 7, 3, 6);
                         break;
                     default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
@@ -582,6 +672,9 @@ void Instruction::Print() {
         case INSTR_UJ:
             printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
             break;
+        case INSTR_CR:
+            printf("%8s %s\n", op_strings[op_type], reg_strings[rs1]);
+            break;
         case INSTR_CI:
             switch (this->op_type) {
                 case OP_LI:
@@ -596,7 +689,7 @@ void Instruction::Print() {
             }
             break;
         case INSTR_CSS:
-            printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
+            printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rs2], imm);
             break;
         case INSTR_CL:
             printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rd], imm, reg_strings[rs1]);
@@ -605,17 +698,24 @@ void Instruction::Print() {
             switch (this->op_type) {
                 case OP_SW:
                 case OP_SD:
-                    printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rd], imm, reg_strings[rs1]);
+                    printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rs2], imm, reg_strings[rs1]);
                     break;
                 default:
-                    printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1],
+                    printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rd],
                            reg_strings[rs2]);
             }
             break;
         case INSTR_CB:
             switch (this->op_type) {
                 case OP_J:
-                    printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
+                    printf("%8s %d\n", op_strings[op_type], imm);
+                    break;
+                case OP_MV:
+                    printf("%8s %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs2]);
+                    break;
+                case OP_ADD:
+                    printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1],
+                           reg_strings[rs2]);
                     break;
                 case OP_SRLI:
                 case OP_SRAI:
@@ -623,7 +723,13 @@ void Instruction::Print() {
                     printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rd], imm);
                     break;
                 default:
-                    printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
+                    printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rs1], imm);
+            }
+            break;
+        case INSTR_CIW:
+            if (this->op_type == OP_ADDI) {
+                printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1], imm);
+                break;
             }
         default: FATAL("Invalid op type %d\n", this->op_type);
     }
@@ -656,7 +762,7 @@ void Machine::Execute(Instruction *instruction) {
             registers[rd] = registers[rs1] - registers[rs2];
             break;
         case OP_SLL:
-            registers[rd] = registers[rs1] << registers[rs2];
+            registers[rd] = registers[rs1] << (registers[rs2] & 0b111111);
             break;
         case OP_SLT:
             registers[rd] = registers[rs1] < registers[rs2] ? 1 : 0;
@@ -668,10 +774,10 @@ void Machine::Execute(Instruction *instruction) {
             registers[rd] = registers[rs1] / registers[rs2];
             break;
         case OP_SRL:
-            registers[rd] = ((uint64_t) registers[rs1]) << registers[rs2];
+            registers[rd] = ((uint64_t) registers[rs1]) << (registers[rs2] & 0b111111);
             break;
         case OP_SRA:
-            registers[rd] = ((int64_t) registers[rs1]) << registers[rs2];
+            registers[rd] = ((int64_t) registers[rs1]) << (registers[rs2] & 0b111111);
             break;
         case OP_OR:
             registers[rd] = registers[rs1] | registers[rs2];
@@ -695,7 +801,10 @@ void Machine::Execute(Instruction *instruction) {
             reg_addr = registers[rs1] + imm;
             break;
         case OP_ADDI:
-            registers[rd] = registers[rs1] + imm;
+            if (instruction->instr_type == INSTR_CIW) // ADDI4SPN
+                registers[rd] = (registers[REG_sp] << 1) + imm;
+            else
+                registers[rd] = registers[rs1] + imm;
             break;
         case OP_SLLI:
             registers[rd] = registers[rs1] << (imm & 0b111111);
@@ -722,8 +831,13 @@ void Machine::Execute(Instruction *instruction) {
             registers[rd] = (int64_t) ((int32_t) (registers[rs1] + imm));
             break;
         case OP_JALR:
-            registers[rd] = reg_prev_pc + 4;
-            reg_pc = ((registers[rs1] + imm) >> 1) << 1;
+            if (instruction->instr_type == INSTR_CR) {
+                registers[1] = reg_prev_pc + 2;
+                reg_pc = registers[rs1];
+            } else {
+                registers[rd] = reg_prev_pc + 4;
+                reg_pc = ((registers[rs1] + imm) >> 1) << 1;
+            }
             break;
         case OP_ECALL:
             this->HandleSystemCall();
@@ -800,6 +914,41 @@ void Machine::Execute(Instruction *instruction) {
         case OP_MV:
             registers[rd] = registers[rs2];
             break;
+        case OP_BLTU:
+            if ((uint64_t) registers[rs1] < (uint64_t) registers[rs2])
+                reg_pc = reg_prev_pc + imm;
+            break;
+        case OP_BGEU:
+            if ((uint64_t) registers[rs1] >= (uint64_t) registers[rs2])
+                reg_pc = reg_prev_pc + imm;
+            break;
+        case OP_JR:
+            reg_pc = registers[rs1];
+            break;
+        case OP_SLLIW:
+            registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (imm & 0b11111));
+            break;
+        case OP_SRLIW:
+            registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (imm & 0b11111));
+            break;
+        case OP_SRAIW:
+            registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (imm & 0b11111));
+            break;
+        case OP_SLLW:
+            registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (registers[rs2] & 0b11111));
+            break;
+        case OP_SRLW:
+            registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
+            break;
+        case OP_SRAW:
+            registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
+            break;
+        case OP_LBU:
+            reg_addr = registers[rs1] + imm;
+            break;
+        case OP_LHU:
+            reg_addr = registers[rs1] + imm;
+            break;
         default: FATAL("Invalid op type %d\n", instruction->op_type);
     }
 }
@@ -813,10 +962,20 @@ void Machine::ReadMemory(Instruction *instruction) {
             this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
             break;
         case OP_LW:
+        case OP_LWSP:
             this->main_memory->ReadMemory(reg_addr, 4, &registers[instruction->rd]);
             break;
         case OP_LD:
+        case OP_LDSP:
             this->main_memory->ReadMemory(reg_addr, 8, &registers[instruction->rd]);
+            break;
+        case OP_LBU:
+            this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
+            registers[instruction->rd] = (int64_t) ((uint8_t) registers[instruction->rd]);
+            break;
+        case OP_LHU:
+            this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
+            registers[instruction->rd] = (int64_t) ((uint16_t) registers[instruction->rd]);
             break;
         default:
             break;
@@ -832,9 +991,11 @@ void Machine::WriteBack(Instruction *instruction) {
             this->main_memory->WriteMemory(reg_addr, 2, registers[instruction->rs2]);
             break;
         case OP_SW:
+        case OP_SWSP:
             this->main_memory->WriteMemory(reg_addr, 4, registers[instruction->rs2]);
             break;
         case OP_SD:
+        case OP_SDSP:
             this->main_memory->WriteMemory(reg_addr, 8, registers[instruction->rs2]);
             break;
         default:
@@ -843,7 +1004,6 @@ void Machine::WriteBack(Instruction *instruction) {
 }
 
 void Machine::HandleSystemCall() {
-
 }
 
 Machine::Machine() {
@@ -859,7 +1019,8 @@ void Machine::PrintRegisters() {
     printf("\nRegister values:\n");
     printf("RegPC: %16.16lx\n", this->reg_pc);
     for (int i = 0; i < 16; i++) {
-        printf("Reg%2.2d: %16.16lx    Reg%2.2d: %16.16lx\n", i, this->registers[i], i + 16, this->registers[i + 16]);
+        printf("Reg %4s: %16.16lx    Reg %4s: %16.16lx\n", reg_strings[i], this->registers[i], reg_strings[i + 16],
+               this->registers[i + 16]);
     }
 }
 
@@ -867,11 +1028,12 @@ void Machine::Run() {
     for (;;) {
         Instruction *instruction = this->FetchInstruction();
         instruction->Decode();
-        DEBUG("PC: %16.16lx ", this->reg_pc);
+        DEBUG("PC: %16.16lx ", this->reg_prev_pc);
         if (debug_enabled)
             instruction->Print();
         this->Execute(instruction);
         this->ReadMemory(instruction);
         this->WriteBack(instruction);
+        registers[REG_zero] = 0x0;
     }
 }

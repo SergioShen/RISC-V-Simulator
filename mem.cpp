@@ -124,7 +124,14 @@ bool Memory::ReadMemory(int64_t address, int32_t size, int64_t *value) {
     auto it = this->FindPage(address);
 
     // We have to insure this address is allocated
-    ASSERT(it != this->memory_page_list.end());
+    // If address is not allocated, allocate a page
+    if (it == this->memory_page_list.end()) {
+        bool result = this->AllocatePage(address);
+        if (!result) {
+            FATAL("Cannot allocate page of address %lx\n", address);
+        }
+        it = this->FindPage(address);
+    }
 
     return it->ReadMemory(address, size, value);
 }

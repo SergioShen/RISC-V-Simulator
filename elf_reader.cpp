@@ -31,6 +31,7 @@ bool Machine::LoadExecutableFile(const char *file_name) {
 
     // Set PC as program entry
     this->reg_pc = elf_header.e_entry;
+    this->registers[REG_sp] = (int64_t) (1) << 48;
     DEBUG("Number of program headers: %d\n", elf_header.e_phnum);
     DEBUG("Offset to program header table: %ld\n", elf_header.e_phoff);
 

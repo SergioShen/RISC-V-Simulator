@@ -96,6 +96,17 @@
 #define OP_SWSP 47
 #define OP_SDSP 48
 #define OP_MV 49
+#define OP_BLTU 50
+#define OP_BGEU 51
+#define OP_JR 52
+#define OP_SLLIW 53
+#define OP_SRLIW 54
+#define OP_SRAIW 55
+#define OP_SLLW 56
+#define OP_SRLW 57
+#define OP_SRAW 58
+#define OP_LBU 59
+#define OP_LHU 60
 
 // Instr type macro definitions
 #define INSTR_R 0
