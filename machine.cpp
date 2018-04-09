@@ -900,16 +900,16 @@ void Machine::Execute(Instruction *instruction) {
                 reg_pc = reg_prev_pc + imm;
             break;
         case OP_LWSP:
-            reg_addr = registers[REG_sp] << 1 + imm;
+            reg_addr = registers[REG_sp] + imm;
             break;
         case OP_LDSP:
-            reg_addr = registers[REG_sp] << 1 + imm;
+            reg_addr = registers[REG_sp] + imm;
             break;
         case OP_SWSP:
-            reg_addr = registers[REG_sp] << 1 + imm;
+            reg_addr = registers[REG_sp] + imm;
             break;
         case OP_SDSP:
-            reg_addr = registers[REG_sp] << 1 + imm;
+            reg_addr = registers[REG_sp] + imm;
             break;
         case OP_MV:
             registers[rd] = registers[rs2];
@@ -1003,9 +1003,6 @@ void Machine::WriteBack(Instruction *instruction) {
     }
 }
 
-void Machine::HandleSystemCall() {
-}
-
 Machine::Machine() {
     this->main_memory = new Memory();
     memset(this->registers, 0, sizeof(this->registers));
@@ -1035,5 +1032,7 @@ void Machine::Run() {
         this->ReadMemory(instruction);
         this->WriteBack(instruction);
         registers[REG_zero] = 0x0;
+        if (this->exit_flag)
+            break;
     }
 }

@@ -190,6 +190,8 @@ private:
     int64_t reg_addr;
     Memory *main_memory;
 
+    bool exit_flag;
+
     Instruction *FetchInstruction();
 
     void Execute(Instruction *instruction);
