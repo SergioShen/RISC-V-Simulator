@@ -736,7 +736,7 @@ void Instruction::Print() {
 }
 
 Instruction *Machine::FetchInstruction() {
-    auto *instruction = new Instruction();
+    Instruction *instruction = new Instruction();
     int64_t instruction_value;
     this->main_memory->ReadMemory(this->reg_pc, sizeof(int32_t), &instruction_value);
     instruction->binary_code = (int32_t) instruction_value;

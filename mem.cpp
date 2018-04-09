@@ -86,7 +86,7 @@ bool operator<(const MemoryPage &a, const MemoryPage &b) {
 }
 
 std::set<MemoryPage>::iterator Memory::FindPage(int64_t address) {
-    for (auto it = this->memory_page_list.begin(); it != this->memory_page_list.end(); it++) {
+    for (std::set<MemoryPage>::iterator it = this->memory_page_list.begin(); it != this->memory_page_list.end(); it++) {
         if (it->AddressInPage(address))
             return it;
     }
@@ -96,20 +96,20 @@ std::set<MemoryPage>::iterator Memory::FindPage(int64_t address) {
 }
 
 bool Memory::AllocatePage(int64_t address) {
-    auto it = this->FindPage(address);
+    std::set<MemoryPage>::iterator it = this->FindPage(address);
 
     // We have to insure this address is not allocated
     ASSERT(it == this->memory_page_list.end());
 
     int64_t start_address = address & (~0xFFF);
-    auto *new_page = new MemoryPage(start_address);
+    MemoryPage *new_page = new MemoryPage(start_address);
     this->memory_page_list.insert(*new_page);
 
     return true;
 }
 
 bool Memory::DeallocatePage(int64_t address) {
-    auto it = this->FindPage(address);
+    std::set<MemoryPage>::iterator it = this->FindPage(address);
 
     // We have to insure this address is allocated
     ASSERT(it != this->memory_page_list.end());
@@ -121,7 +121,7 @@ bool Memory::DeallocatePage(int64_t address) {
 
 
 bool Memory::ReadMemory(int64_t address, int32_t size, int64_t *value) {
-    auto it = this->FindPage(address);
+    std::set<MemoryPage>::iterator it = this->FindPage(address);
 
     // We have to insure this address is allocated
     // If address is not allocated, allocate a page
@@ -138,7 +138,7 @@ bool Memory::ReadMemory(int64_t address, int32_t size, int64_t *value) {
 
 
 bool Memory::WriteMemory(int64_t address, int32_t size, int64_t value) {
-    auto it = this->FindPage(address);
+    std::set<MemoryPage>::iterator it = this->FindPage(address);
 
     // If address is not allocated, allocate a page
     if (it == this->memory_page_list.end()) {
