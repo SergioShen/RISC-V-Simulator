@@ -35,12 +35,14 @@ extern bool debug_enabled;
 #define DEBUG(...)                                                                                \
     if (debug_enabled) {                                                                          \
         printf(__VA_ARGS__);                                                                      \
+        fflush(stdout);                                                                           \
     }                                                                                             \
 
 
 #define FATAL(...)                                                                                \
     {                                                                                             \
         fprintf(stderr, __VA_ARGS__);                                                             \
+        fflush(stderr);                                                                           \
         abort();                                                                                  \
     }                                                                                             \
 
