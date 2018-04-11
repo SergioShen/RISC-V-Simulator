@@ -93,7 +93,8 @@ inline void Instruction::DecodeUJInstruction() {
     this->ImmSignExtend(21);
 }
 
-void Instruction::Decode() {
+bool Instruction::Decode() {
+    bool return_value = true;
     // Test if instruction is compressed type or not
     if (Decode_c_opcode(this->binary_code) == 3) {
         // This is not a compressed instruction
@@ -113,8 +114,10 @@ void Instruction::Decode() {
                             case 0x20:
                                 this->op_type = OP_SUB;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x1:
@@ -125,8 +128,10 @@ void Instruction::Decode() {
                             case 0x01:
                                 this->op_type = OP_MULH;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x2:
@@ -134,8 +139,10 @@ void Instruction::Decode() {
                             case 0x00:
                                 this->op_type = OP_SLT;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x4:
@@ -146,8 +153,10 @@ void Instruction::Decode() {
                             case 0x01:
                                 this->op_type = OP_DIV;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x5:
@@ -158,8 +167,10 @@ void Instruction::Decode() {
                             case 0X20:
                                 this->op_type = OP_SRA;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x6:
@@ -170,8 +181,10 @@ void Instruction::Decode() {
                             case 0x01:
                                 this->op_type = OP_REM;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x7:
@@ -179,11 +192,15 @@ void Instruction::Decode() {
                             case 0x00:
                                 this->op_type = OP_AND;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x3B:
@@ -195,16 +212,18 @@ void Instruction::Decode() {
                         } else if (this->funct7 == 0x20) {
                             this->op_type = OP_SUBW;
                         } else {
-                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                            DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
                                   this->opcode, this->funct3, this->funct7);
+                            return_value = false;
                         }
                         break;
                     case 0x1:
                         if (this->funct7 == 0x00) {
                             this->op_type = OP_SLLW;
                         } else {
-                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                            DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
                                   this->opcode, this->funct3, this->funct7);
+                            return_value = false;
                         }
                         break;
                     case 0x5:
@@ -213,11 +232,14 @@ void Instruction::Decode() {
                         } else if (this->funct7 == 0x20) {
                             this->op_type = OP_SRAW;
                         } else {
-                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                            DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
                                   this->opcode, this->funct3, this->funct7);
+                            return_value = false;
                         }
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x03:
@@ -241,7 +263,9 @@ void Instruction::Decode() {
                     case 0x5:
                         this->op_type = OP_LHU;
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x13:
@@ -254,8 +278,9 @@ void Instruction::Decode() {
                         if (this->funct7 == 0x00)
                             this->op_type = OP_SLLI;
                         else {
-                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                            DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
                                   this->opcode, this->funct3, this->funct7);
+                            return_value = false;
                         }
                         break;
                     case 0x2:
@@ -272,8 +297,10 @@ void Instruction::Decode() {
                             case 0x01:
                                 this->op_type = OP_SRAI;
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
-                                           this->opcode, this->funct3, this->funct7);
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                                      this->opcode, this->funct3, this->funct7);
+                                return_value = false;
                         }
                         break;
                     case 0x6:
@@ -282,7 +309,9 @@ void Instruction::Decode() {
                     case 0x7:
                         this->op_type = OP_ANDI;
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x1B:
@@ -300,11 +329,14 @@ void Instruction::Decode() {
                         } else if (this->funct7 == 0x20) {
                             this->op_type = OP_SRAIW;
                         } else {
-                            FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                            DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
                                   this->opcode, this->funct3, this->funct7);
+                            return_value = false;
                         }
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x67:
@@ -312,7 +344,8 @@ void Instruction::Decode() {
                 if (this->funct3 == 0x0)
                     this->op_type = OP_JALR;
                 else {
-                    FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    return_value = false;
                 }
                 break;
             case 0x73:
@@ -320,8 +353,9 @@ void Instruction::Decode() {
                 if (this->funct3 == 0x0 && this->funct7 == 0x00)
                     this->op_type = OP_ECALL;
                 else {
-                    FATAL("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
+                    DEBUG("OP Code %x, Funct3 %x, Funct7 %x not implemented\n",
                           this->opcode, this->funct3, this->funct7);
+                    return_value = false;
                 }
                 break;
             case 0x23:
@@ -339,7 +373,9 @@ void Instruction::Decode() {
                     case 0x3:
                         this->op_type = OP_SD;
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x63:
@@ -363,7 +399,9 @@ void Instruction::Decode() {
                     case 0x7:
                         this->op_type = OP_BGEU;
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x17:
@@ -378,7 +416,9 @@ void Instruction::Decode() {
                 this->DecodeUJInstruction();
                 this->op_type = OP_JAL;
                 break;
-            default: FATAL("OP Code %x not implemented\n", this->opcode);
+            default:
+                DEBUG("OP Code %x not implemented\n", this->opcode);
+                return_value = false;
         }
     } else {
         // This is a compressed instruction
@@ -427,7 +467,9 @@ void Instruction::Decode() {
                         this->op_type = OP_SD;
                         this->imm = Decode_imm(this->binary_code, 10, 3, 3) + Decode_imm(this->binary_code, 5, 2, 6);
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x1:
@@ -520,9 +562,11 @@ void Instruction::Decode() {
                                             case 0x3:
                                                 this->op_type = OP_AND;
                                                 break;
-                                            default: FATAL("OP Code %x, Funct6 %x, Funct %x not implemented\n",
-                                                           Decode_imm(this->binary_code, 10, 6, 0),
-                                                           Decode_imm(this->binary_code, 5, 2, 0));
+                                            default:
+                                                DEBUG("OP Code %x, Funct6 %x, Funct %x not implemented\n",
+                                                      Decode_imm(this->binary_code, 10, 6, 0),
+                                                      Decode_imm(this->binary_code, 5, 2, 0));
+                                                return_value = false;
                                         }
                                         break;
                                     case 0x1:
@@ -533,17 +577,23 @@ void Instruction::Decode() {
                                             case 0x1:
                                                 this->op_type = OP_ADDW;
                                                 break;
-                                            default: FATAL("OP Code %x, Funct6 %x, Funct %x not implemented\n",
-                                                           Decode_imm(this->binary_code, 10, 6, 0),
-                                                           Decode_imm(this->binary_code, 5, 2, 0));
+                                            default:
+                                                DEBUG("OP Code %x, Funct6 %x, Funct %x not implemented\n",
+                                                      Decode_imm(this->binary_code, 10, 6, 0),
+                                                      Decode_imm(this->binary_code, 5, 2, 0));
+                                                return_value = false;
                                         }
                                         break;
-                                    default: FATAL("OP Code %x, Funct6 %x not implemented\n",
-                                                   Decode_imm(this->binary_code, 10, 6, 0));
+                                    default:
+                                        DEBUG("OP Code %x, Funct6 %x not implemented\n",
+                                              Decode_imm(this->binary_code, 10, 6, 0));
+                                        return_value = false;
                                 }
                                 break;
-                            default: FATAL("OP Code %x, Funct3 %x, Funct2 %x not implemented\n",
-                                           this->opcode, this->funct3, Decode_imm(this->binary_code, 10, 2, 0));
+                            default:
+                                DEBUG("OP Code %x, Funct3 %x, Funct2 %x not implemented\n",
+                                      this->opcode, this->funct3, Decode_imm(this->binary_code, 10, 2, 0));
+                                return_value = false;
                         }
                         break;
                     case 0x5:
@@ -571,7 +621,9 @@ void Instruction::Decode() {
                                     Decode_imm(this->binary_code, 2, 1, 5) + Decode_imm(this->binary_code, 5, 2, 6) +
                                     Decode_imm(this->binary_code, 12, 1, 8);
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
             case 0x2:
@@ -618,7 +670,8 @@ void Instruction::Decode() {
                             } else
                                 this->op_type = OP_ADD;
                         } else {
-                            FATAL("OP Code %x, Funct4 %x not implemented\n", Decode_imm(this->binary_code, 10, 4, 0));
+                            DEBUG("OP Code %x, Funct4 %x not implemented\n", Decode_imm(this->binary_code, 10, 4, 0));
+                            return_value = false;
                         }
                         break;
                     case 0x6:
@@ -633,12 +686,17 @@ void Instruction::Decode() {
                         this->op_type = OP_SDSP;
                         this->imm = Decode_imm(this->binary_code, 10, 3, 3) + Decode_imm(this->binary_code, 7, 3, 6);
                         break;
-                    default: FATAL("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                    default:
+                        DEBUG("OP Code %x, Funct3 %x not implemented\n", this->opcode, this->funct3);
+                        return_value = false;
                 }
                 break;
-            default: FATAL("OP Code %x not implemented\n", this->opcode);
+            default:
+                DEBUG("OP Code %x not implemented\n", this->opcode);
+                return_value = false;
         }
     }
+    return return_value;
 }
 
 void Instruction::Print() {
@@ -1003,6 +1061,10 @@ void Machine::WriteBack(Instruction *instruction) {
     }
 }
 
+void Machine::SetHeapPointer(int64_t address) {
+    this->heap_pointer = address;
+}
+
 Machine::Machine() {
     this->main_memory = new Memory();
     memset(this->registers, 0, sizeof(this->registers));
@@ -1021,10 +1083,20 @@ void Machine::PrintRegisters() {
     }
 }
 
+void Machine::DumpState() {
+    printf("PC: %16.16lx\n", this->reg_pc);
+    printf("PrevPC: %16.16lx\n", this->reg_prev_pc);
+    printf("HeapPointer: %16.16lx\n", this->heap_pointer);
+    this->PrintRegisters();
+}
+
 void Machine::Run() {
     for (;;) {
         Instruction *instruction = this->FetchInstruction();
-        instruction->Decode();
+        if (!instruction->Decode()) {
+            this->DumpState();
+            FATAL("Decode error, machine state dumped\n");
+        }
         DEBUG("PC: %16.16lx ", this->reg_prev_pc);
         if (debug_enabled)
             instruction->Print();

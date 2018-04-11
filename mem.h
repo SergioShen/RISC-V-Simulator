@@ -11,7 +11,6 @@
 #include "utility.h"
 #include <set>
 
-#define PageSize 4096
 
 class MemoryPage {
 public:

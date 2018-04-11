@@ -1,4 +1,8 @@
 rsv-sim
 *.o
+*.disassm
 
 program/test
+program/qsort
+program/ackermann
+program/matrix
