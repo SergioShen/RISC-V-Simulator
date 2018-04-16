@@ -37,8 +37,13 @@ void Initialize(int argc, char **argv) {
     machine->LoadExecutableFile(argv[1]);
 }
 
+void CleanSystem() {
+    delete machine;
+}
+
 int main(int argc, char **argv) {
     Initialize(argc, argv);
     machine->Run();
+    CleanSystem();
     return 0;
 }
