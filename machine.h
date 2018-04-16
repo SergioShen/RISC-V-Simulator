@@ -188,10 +188,7 @@ private:
     int64_t reg_pc;
     int64_t reg_prev_pc;
     int64_t reg_addr;
-    Memory *main_memory;
     int64_t heap_pointer;
-
-    bool exit_flag;
 
     Instruction *FetchInstruction();
 
@@ -206,6 +203,9 @@ private:
     void SetHeapPointer(int64_t address);
 
 public:
+    bool exit_flag;
+    Memory *main_memory;
+
     Machine();
 
     ~Machine();
@@ -214,7 +214,7 @@ public:
 
     void PrintRegisters();
 
-    void Run();
+    void OneInstruction();
 
     void DumpState();
 };

@@ -1090,21 +1090,19 @@ void Machine::DumpState() {
     this->PrintRegisters();
 }
 
-void Machine::Run() {
-    for (;;) {
-        Instruction *instruction = this->FetchInstruction();
-        if (!instruction->Decode()) {
-            this->DumpState();
-            FATAL("Decode error, machine state dumped\n");
-        }
-        DEBUG("PC: %16.16lx ", this->reg_prev_pc);
-        if (debug_enabled)
-            instruction->Print();
-        this->Execute(instruction);
-        this->ReadMemory(instruction);
-        this->WriteBack(instruction);
-        registers[REG_zero] = 0x0;
-        if (this->exit_flag)
-            break;
+void Machine::OneInstruction() {
+    ASSERT(!this->exit_flag);
+
+    Instruction *instruction = this->FetchInstruction();
+    if (!instruction->Decode()) {
+        this->DumpState();
+        FATAL("Decode error, machine state dumped\n");
     }
+    DEBUG("PC: %16.16lx ", this->reg_prev_pc);
+    if (debug_enabled)
+        instruction->Print();
+    this->Execute(instruction);
+    this->ReadMemory(instruction);
+    this->WriteBack(instruction);
+    registers[REG_zero] = 0x0;
 }

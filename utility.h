@@ -36,9 +36,10 @@ typedef unsigned long int uint64_t;
     }                                                                                             \
 
 extern bool debug_enabled;
+extern bool initializing;
 
 #define DEBUG(...)                                                                                \
-    if (debug_enabled) {                                                                          \
+    if (!initializing && debug_enabled) {                                                         \
         printf(__VA_ARGS__);                                                                      \
         fflush(stdout);                                                                           \
     }                                                                                             \
