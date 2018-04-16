@@ -38,4 +38,4 @@ dump: test qsort
 	$(OBJDUMP) -d matrix > matrix.disassm
 
 clean:
-	rm -f *.o *.disassm test qsort
+	rm -f *.o *.disassm test qsort ackermann matrix
