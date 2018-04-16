@@ -1,10 +1,11 @@
 GCC = g++
 GCCFLAGS = -O2 -w
 
-all: rsv-sim
+all: riscv-sim
+	cd program; make;
 
-rsv-sim: mem.o machine.o elf_reader.o exception.o main.o
-	$(GCC) $(GCCFLAGS) -o rsv-sim main.o machine.o mem.o elf_reader.o exception.o
+riscv-sim: mem.o machine.o elf_reader.o exception.o main.o
+	$(GCC) $(GCCFLAGS) -o riscv-sim main.o machine.o mem.o elf_reader.o exception.o
 
 mem.o: utility.h mem.h mem.cpp
 	$(GCC) $(GCCFLAGS) -c mem.cpp
@@ -22,4 +23,5 @@ main.o: utility.h machine.h main.cpp
 	$(GCC) $(GCCFLAGS) -c main.cpp
 
 clean:
-	rm -f *.o rsv-sim
+	rm -f *.o riscv-sim
+	cd program; make clean;

@@ -60,3 +60,34 @@ void read_string(char *address) {
     asm("addi a7, zero, 8\n\t");
     asm("ecall\n\t");
 }
+
+void set_rand_seed(int seed) {
+    asm("mv a0, %0\n\t": : "r"(seed):"a0");
+    asm("addi a7, zero, 9\n\t");
+    asm("ecall\n\t");
+}
+
+int rand_int() {
+    int value;
+    asm("addi a7, zero, 10\n\t");
+    asm("ecall\n\t");
+    asm("mv %0, a7\n\t":"=r"(value)::);
+    return value;
+}
+
+void *mem_alloc(long size) {
+    void *address;
+    asm("mv a0, %0\n\t": : "r"(size):"a0");
+    asm("addi a7, zero, 11\n\t");
+    asm("ecall\n\t");
+    asm("mv %0, a7\n\t":"=r"(address)::);
+    return address;
+}
+
+long time() {
+    long time;
+    asm("addi a7, zero, 12\n\t");
+    asm("ecall\n\t");
+    asm("mv %0, a7\n\t":"=r"(time)::);
+    return time;
+}

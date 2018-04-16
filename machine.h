@@ -176,7 +176,7 @@ public:
     int8_t instr_type;
 
     // Decode the instruction
-    void Decode();
+    bool Decode();
 
     // Print the semantic meaning of the instruction
     void Print();
@@ -188,9 +188,7 @@ private:
     int64_t reg_pc;
     int64_t reg_prev_pc;
     int64_t reg_addr;
-    Memory *main_memory;
-
-    bool exit_flag;
+    int64_t heap_pointer;
 
     Instruction *FetchInstruction();
 
@@ -202,8 +200,12 @@ private:
 
     void HandleSystemCall();
 
+    void SetHeapPointer(int64_t address);
 
 public:
+    bool exit_flag;
+    Memory *main_memory;
+
     Machine();
 
     ~Machine();
@@ -212,7 +214,9 @@ public:
 
     void PrintRegisters();
 
-    void Run();
+    void OneInstruction();
+
+    void DumpState();
 };
 
 #endif //RISC_V_SIMULATOR_MACHINE_H

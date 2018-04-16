@@ -50,5 +50,11 @@ bool Machine::LoadExecutableFile(const char *file_name) {
             executable_file.read((char *) &value64, 8);
             this->main_memory->WriteMemory(program_header.p_vaddr + 8 * vi, 8, value64);
         }
+
+        if (i == elf_header.e_phnum - 1) {
+            // This is the last segment, the heap pointer should be initialized
+            int64_t heap_address = RoundUp(program_header.p_vaddr + program_header.p_memsz, PageSizeBitsNum);
+            this->SetHeapPointer(heap_address);
+        }
     }
 }

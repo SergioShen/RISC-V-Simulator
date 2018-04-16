@@ -17,6 +17,14 @@
 #define RISCV_SYSCALL_RINT 6
 #define RISCV_SYSCALL_RLONG 7
 #define RISCV_SYSCALL_RSTRING 8
+#define RISCV_SYSCALL_SRAND 9
+#define RISCV_SYSCALL_RAND 10
+#define RISCV_SYSCALL_MALLOC 11
+#define RISCV_SYSCALL_TIME 12
+
+#define malloc mem_alloc
+#define rand rand_int
+#define srand set_rand_seed
 
 void exit(int exit_code);
 
@@ -35,5 +43,13 @@ void read_int(int *address);
 void read_long(long *address);
 
 void read_string(char *address);
+
+void set_rand_seed(int seed);
+
+int rand_int();
+
+void *mem_alloc(long size);
+
+long time();
 
 #endif //LIB_H

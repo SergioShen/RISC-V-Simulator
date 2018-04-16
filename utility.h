@@ -22,6 +22,11 @@ typedef unsigned short int uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long int uint64_t;
 
+#define PageSizeBitsNum 12
+#define PageSize (1 << PageSizeBitsNum)
+
+#define RoundUp(value, num_of_bits) ((((value - 1) >> num_of_bits) + 1) << num_of_bits)
+
 
 #define ASSERT(condition)                                                                         \
     if (!(condition)) {                                                                           \
@@ -31,9 +36,10 @@ typedef unsigned long int uint64_t;
     }                                                                                             \
 
 extern bool debug_enabled;
+extern bool initializing;
 
 #define DEBUG(...)                                                                                \
-    if (debug_enabled) {                                                                          \
+    if (!initializing && debug_enabled) {                                                         \
         printf(__VA_ARGS__);                                                                      \
         fflush(stdout);                                                                           \
     }                                                                                             \
