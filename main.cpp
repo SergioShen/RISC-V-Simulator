@@ -27,6 +27,7 @@ void PrintInteractiveHelpMessage(FILE *file) {
     fprintf(file, "Interactive debug mode usage:\n");
     fprintf(file, "reg                 : Display all registers\n");
     fprintf(file, "m(mem) <hex addr>   : Show memory content at <hex addr>\n");
+    fprintf(file, "s(single)           : Run single steps\n");
     fprintf(file, "r(run) <count>      : Run <count> steps\n");
     fprintf(file, "q(quit)             : Quit\n");
     fprintf(file, "h(help)             : Show this help message\n");
@@ -66,7 +67,7 @@ void Initialize(int argc, char **argv) {
 
 void Run() {
     for (;;) {
-        machine->OneInstruction();
+        machine->OneCycle();
         if (machine->exit_flag)
             break;
     }
@@ -85,11 +86,15 @@ void InteractiveRun() {
             scanf("%lx", &cmd_arg);
             machine->main_memory->ReadMemory(cmd_arg, 8, &value);
             printf("Value at memory %lx: %16.16lx\n", cmd_arg, value);
+        } else if (!strcmp(cmd, "s") || !strcmp(cmd, "single")) {
+            machine->OneCycle();
+            if (machine->exit_flag)
+                break;
         } else if (!strcmp(cmd, "r") || !strcmp(cmd, "run")) {
             scanf("%ld", &cmd_arg);
             ASSERT(cmd_arg > 0);
             for (int i = 0; i < cmd_arg; i++) {
-                machine->OneInstruction();
+                machine->OneCycle();
                 if (machine->exit_flag)
                     break;
             }
