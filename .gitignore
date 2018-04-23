@@ -1,4 +1,4 @@
-rsv-sim
+riscv-sim
 *.o
 *.disassm
 
