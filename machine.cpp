@@ -20,7 +20,6 @@ Instruction *Machine::FetchInstruction() {
     instruction->binary_code = (int32_t) instruction_value;
     instruction->instr_pc = reg_pc;
     instruction->decoded = false;
-    this->reg_prev_pc = reg_pc;
     if (Decode_imm(instruction->binary_code, 0, 2, 0) == 0x3)
         this->reg_pc += 4;
     else
@@ -29,238 +28,280 @@ Instruction *Machine::FetchInstruction() {
 }
 
 void Machine::Execute(Instruction *instruction) {
+    // When this step is going to execute, WriteBack step of i-2 instruction has already done
+    // And AccessMemory step of i-1 instruction has already done
+    // So the value loaded from memory by i-1 instruction which has not been write to registers will cause data hazard
+    // And remember: i-1 instruction has been moved from REG_ACC_MEM to REG_WRITE_BACK
+    // When jump occurs, there will be ctrl hazard
+    // Only the ctrl hazard will make pipeline stall
+
     bool jump = false;
     if (instruction != NULL) {
         stats->IncreaseInstruction();
-        int8_t rs1 = instruction->rs1, rs2 = instruction->rs2, rd = instruction->rd;
         int32_t imm = instruction->imm;
+        int64_t value_rs1 = registers[instruction->rs1],
+                value_rs2 = registers[instruction->rs2],
+                value_rd = registers[instruction->rd],
+                value_sp = registers[REG_sp],
+                value_a7 = registers[REG_a7],
+                value_a0 = registers[REG_a0];
+
+        if (regs_instr[REG_INSTR_WRITE_BACK] != NULL && regs_instr[REG_INSTR_WRITE_BACK]->write_reg) {
+            // Data hazard may happen, new value should be used
+            if (regs_instr[REG_INSTR_WRITE_BACK]->rd == instruction->rs1) {
+                value_rs1 = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
+                DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[instruction->rs1], value_rs1);
+            }
+            if (regs_instr[REG_INSTR_WRITE_BACK]->rd == instruction->rs2) {
+                value_rs2 = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
+                DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[instruction->rs2], value_rs2);
+            }
+            if (regs_instr[REG_INSTR_WRITE_BACK]->rd == instruction->rd) {
+                value_rd = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
+                DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[instruction->rd], value_rd);
+            }
+            if (regs_instr[REG_INSTR_WRITE_BACK]->rd == REG_sp) {
+                value_sp = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
+                DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[REG_sp], value_sp);
+            }
+            if (regs_instr[REG_INSTR_WRITE_BACK]->rd == REG_a7) {
+                value_a7 = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
+                DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[REG_a7], value_a7);
+            }
+            if (regs_instr[REG_INSTR_WRITE_BACK]->rd == REG_a0) {
+                value_a0 = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
+                DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[REG_a0], value_a0);
+            }
+        }
+
         switch (instruction->op_type) {
             case OP_ADD:
-                registers[rd] = registers[rs1] + registers[rs2];
+                instruction->write_back_value = value_rs1 + value_rs2;
                 break;
             case OP_MUL:
-                registers[rd] = registers[rs1] * registers[rs2];
+                instruction->write_back_value = value_rs1 * value_rs2;
                 break;
             case OP_SUB:
-                registers[rd] = registers[rs1] - registers[rs2];
+                instruction->write_back_value = value_rs1 - value_rs2;
                 break;
             case OP_SLL:
-                registers[rd] = registers[rs1] << (registers[rs2] & 0b111111);
+                instruction->write_back_value = value_rs1 << (value_rs2 & 0b111111);
                 break;
             case OP_SLT:
-                registers[rd] = registers[rs1] < registers[rs2] ? 1 : 0;
+                instruction->write_back_value = value_rs1 < value_rs2 ? 1 : 0;
                 break;
             case OP_XOR:
-                registers[rd] = registers[rs1] ^ registers[rs2];
+                instruction->write_back_value = value_rs1 ^ value_rs2;
                 break;
             case OP_DIV:
-                registers[rd] = registers[rs1] / registers[rs2];
+                instruction->write_back_value = value_rs1 / value_rs2;
                 break;
             case OP_SRL:
-                registers[rd] = ((uint64_t) registers[rs1]) << (registers[rs2] & 0b111111);
+                instruction->write_back_value = ((uint64_t) value_rs1) << (value_rs2 & 0b111111);
                 break;
             case OP_SRA:
-                registers[rd] = ((int64_t) registers[rs1]) << (registers[rs2] & 0b111111);
+                instruction->write_back_value = ((int64_t) value_rs1) << (value_rs2 & 0b111111);
                 break;
             case OP_OR:
-                registers[rd] = registers[rs1] | registers[rs2];
+                instruction->write_back_value = value_rs1 | value_rs2;
                 break;
             case OP_REM:
-                registers[rd] = registers[rs1] % registers[rs2];
+                instruction->write_back_value = value_rs1 % value_rs2;
                 break;
             case OP_AND:
-                registers[rd] = registers[rs1] & registers[rs2];
+                instruction->write_back_value = value_rs1 & value_rs2;
                 break;
             case OP_LB:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_LH:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_LW:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_LD:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_ADDI:
                 if (instruction->instr_type == INSTR_CIW) // ADDI4SPN
-                    registers[rd] = (registers[REG_sp] << 1) + imm;
+                    instruction->write_back_value = (value_sp << 1) + imm;
                 else
-                    registers[rd] = registers[rs1] + imm;
+                    instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_SLLI:
-                registers[rd] = registers[rs1] << (imm & 0b111111);
+                instruction->write_back_value = value_rs1 << (imm & 0b111111);
                 break;
             case OP_SLTI:
-                registers[rd] = registers[rs1] < imm ? 1 : 0;
+                instruction->write_back_value = value_rs1 < imm ? 1 : 0;
                 break;
             case OP_XORI:
-                registers[rd] = registers[rs1] ^ imm;
+                instruction->write_back_value = value_rs1 ^ imm;
                 break;
             case OP_SRLI:
-                registers[rd] = ((uint64_t) registers[rs1]) >> (imm & 0b111111);
+                instruction->write_back_value = ((uint64_t) value_rs1) >> (imm & 0b111111);
                 break;
             case OP_SRAI:
-                registers[rd] = ((int64_t) registers[rs1]) >> (imm & 0b111111);
+                instruction->write_back_value = ((int64_t) value_rs1) >> (imm & 0b111111);
                 break;
             case OP_ORI:
-                registers[rd] = registers[rs1] | imm;
+                instruction->write_back_value = value_rs1 | imm;
                 break;
             case OP_ANDI:
-                registers[rd] = registers[rs1] & imm;
+                instruction->write_back_value = value_rs1 & imm;
                 break;
             case OP_ADDIW:
-                registers[rd] = (int64_t) ((int32_t) (registers[rs1] + imm));
+                instruction->write_back_value = (int64_t) ((int32_t) (value_rs1 + imm));
                 break;
             case OP_JALR:
                 if (instruction->instr_type == INSTR_CR) {
-                    registers[1] = instruction->instr_pc + 2;
-                    reg_pc = registers[rs1];
+                    instruction->write_back_value = instruction->instr_pc + 2;
+                    reg_pc = value_rs1;
                     jump = true;
                 } else {
-                    registers[rd] = instruction->instr_pc + 4;
-                    reg_pc = ((registers[rs1] + imm) >> 1) << 1;
+                    instruction->write_back_value = instruction->instr_pc + 4;
+                    reg_pc = ((value_rs1 + imm) >> 1) << 1;
                     jump = true;
                 }
                 break;
             case OP_ECALL:
-                this->HandleSystemCall();
+                this->HandleSystemCall(instruction, value_a7, value_a0);
+                break;
             case OP_SB:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_SH:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_SW:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_SD:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_BEQ:
-                if (registers[rs1] == registers[rs2]) {
+                if (value_rs1 == value_rs2) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_BNE:
-                if (registers[rs1] != registers[rs2]) {
+                if (value_rs1 != value_rs2) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_BLT:
-                if (registers[rs1] < registers[rs2]) {
+                if (value_rs1 < value_rs2) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_BGE:
-                if (registers[rs1] >= registers[rs2]) {
+                if (value_rs1 >= value_rs2) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_AUIPC:
-                registers[rd] = instruction->instr_pc + imm;
+                instruction->write_back_value = instruction->instr_pc + imm;
                 break;
             case OP_LUI:
-                registers[rd] = imm;
+                instruction->write_back_value = imm;
                 break;
             case OP_JAL:
-                registers[rd] = instruction->instr_pc + 4;
+                instruction->write_back_value = instruction->instr_pc + 4;
                 reg_pc = instruction->instr_pc + imm;
                 jump = true;
                 break;
             case OP_LI:
-                registers[rd] = imm;
+                instruction->write_back_value = imm;
                 break;
             case OP_SUBW:
-                registers[rd] = (int64_t) ((int32_t) (registers[rd] - registers[rs2]));
+                instruction->write_back_value = (int64_t) ((int32_t) (value_rd - value_rs2));
                 break;
             case OP_ADDW:
-                registers[rd] = (int64_t) ((int32_t) (registers[rd] + registers[rs2]));
+                instruction->write_back_value = (int64_t) ((int32_t) (value_rd + value_rs2));
                 break;
             case OP_J:
                 reg_pc = instruction->instr_pc + imm;
                 jump = true;
                 break;
             case OP_BEQZ:
-                if (registers[rs1] == 0) {
+                if (value_rs1 == 0) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_BNEZ:
-                if (registers[rs1] != 0) {
+                if (value_rs1 != 0) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_LWSP:
-                reg_addr = registers[REG_sp] + imm;
+                instruction->write_back_value = value_sp + imm;
                 break;
             case OP_LDSP:
-                reg_addr = registers[REG_sp] + imm;
+                instruction->write_back_value = value_sp + imm;
                 break;
             case OP_SWSP:
-                reg_addr = registers[REG_sp] + imm;
+                instruction->write_back_value = value_sp + imm;
                 break;
             case OP_SDSP:
-                reg_addr = registers[REG_sp] + imm;
+                instruction->write_back_value = value_sp + imm;
                 break;
             case OP_MV:
-                registers[rd] = registers[rs2];
+                instruction->write_back_value = value_rs2;
                 break;
             case OP_BLTU:
-                if ((uint64_t) registers[rs1] < (uint64_t) registers[rs2]) {
+                if ((uint64_t) value_rs1 < (uint64_t) value_rs2) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_BGEU:
-                if ((uint64_t) registers[rs1] >= (uint64_t) registers[rs2]) {
+                if ((uint64_t) value_rs1 >= (uint64_t) value_rs2) {
                     reg_pc = instruction->instr_pc + imm;
                     jump = true;
                 }
                 break;
             case OP_JR:
-                reg_pc = registers[rs1];
+                reg_pc = value_rs1;
                 jump = true;
                 break;
             case OP_SLLIW:
-                registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (imm & 0b11111));
+                instruction->write_back_value = (int64_t) (((int32_t) value_rs1) << (imm & 0b11111));
                 break;
             case OP_SRLIW:
-                registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (imm & 0b11111));
+                instruction->write_back_value = (int64_t) (((uint32_t) value_rs1) >> (imm & 0b11111));
                 break;
             case OP_SRAIW:
-                registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (imm & 0b11111));
+                instruction->write_back_value = (int64_t) (((int32_t) value_rs1) >> (imm & 0b11111));
                 break;
             case OP_SLLW:
-                registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (registers[rs2] & 0b11111));
+                instruction->write_back_value = (int64_t) (((int32_t) value_rs1) << (value_rs2 & 0b11111));
                 break;
             case OP_SRLW:
-                registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
+                instruction->write_back_value = (int64_t) (((uint32_t) value_rs1) >> (value_rs2 & 0b11111));
                 break;
             case OP_SRAW:
-                registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
+                instruction->write_back_value = (int64_t) (((int32_t) value_rs1) >> (value_rs2 & 0b11111));
                 break;
             case OP_LBU:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_LHU:
-                reg_addr = registers[rs1] + imm;
+                instruction->write_back_value = value_rs1 + imm;
                 break;
             case OP_MULW:
-                registers[rd] = (int64_t) ((int32_t) registers[rs1] * (int32_t) registers[rs2]);
+                instruction->write_back_value = (int64_t) ((int32_t) value_rs1 * (int32_t) value_rs2);
                 break;
             default: FATAL("Invalid op type %d\n", instruction->op_type);
         }
     }
 
-    // Delete current instruction and move instruction of last pipeline step here
+    // Move instruction of last pipeline step here
     if (jump) {
         if (regs_instr[REG_INSTR_DECODE] != NULL) {
             delete regs_instr[REG_INSTR_DECODE];
@@ -273,53 +314,65 @@ void Machine::Execute(Instruction *instruction) {
 }
 
 void Machine::AccessMemory(Instruction *instruction) {
+    // When this step is going to execute, WriteBack step of i-1 instruction has already done
+    // So there won't be any hazard. It's okay to directly load value from registers
     if (instruction != NULL) {
         switch (instruction->op_type) {
             case OP_LB:
-                this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
+                this->main_memory->ReadMemory(instruction->write_back_value, 1, &instruction->write_back_value);
                 break;
             case OP_LH:
-                this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
+                this->main_memory->ReadMemory(instruction->write_back_value, 2, &instruction->write_back_value);
                 break;
             case OP_LW:
             case OP_LWSP:
-                this->main_memory->ReadMemory(reg_addr, 4, &registers[instruction->rd]);
+                this->main_memory->ReadMemory(instruction->write_back_value, 4, &instruction->write_back_value);
                 break;
             case OP_LD:
             case OP_LDSP:
-                this->main_memory->ReadMemory(reg_addr, 8, &registers[instruction->rd]);
+                this->main_memory->ReadMemory(instruction->write_back_value, 8, &instruction->write_back_value);
                 break;
             case OP_LBU:
-                this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
-                registers[instruction->rd] = (int64_t) ((uint8_t) registers[instruction->rd]);
+                this->main_memory->ReadMemory(instruction->write_back_value, 1, &instruction->write_back_value);
+                instruction->write_back_value = (int64_t) ((uint8_t) instruction->write_back_value);
                 break;
             case OP_LHU:
-                this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
-                registers[instruction->rd] = (int64_t) ((uint16_t) registers[instruction->rd]);
+                this->main_memory->ReadMemory(instruction->write_back_value, 2, &instruction->write_back_value);
+                instruction->write_back_value = (int64_t) ((uint16_t) instruction->write_back_value);
                 break;
             case OP_SB:
-                this->main_memory->WriteMemory(reg_addr, 1, registers[instruction->rs2]);
+                this->main_memory->WriteMemory(instruction->write_back_value, 1, registers[instruction->rs2]);
                 break;
             case OP_SH:
-                this->main_memory->WriteMemory(reg_addr, 2, registers[instruction->rs2]);
+                this->main_memory->WriteMemory(instruction->write_back_value, 2, registers[instruction->rs2]);
                 break;
             case OP_SW:
             case OP_SWSP:
-                this->main_memory->WriteMemory(reg_addr, 4, registers[instruction->rs2]);
+                this->main_memory->WriteMemory(instruction->write_back_value, 4, registers[instruction->rs2]);
                 break;
             case OP_SD:
             case OP_SDSP:
-                this->main_memory->WriteMemory(reg_addr, 8, registers[instruction->rs2]);
+                this->main_memory->WriteMemory(instruction->write_back_value, 8, registers[instruction->rs2]);
                 break;
             default:
                 break;
         }
     }
 
+    // Move instruction of last pipeline step here
+    regs_instr[REG_INSTR_ACCESS_MEM] = regs_instr[REG_INSTR_EXECUTE];
+}
+
+void Machine::WriteBack(Instruction *instruction) {
+    if (instruction != NULL) {
+        if (instruction->write_reg)
+            registers[instruction->rd] = instruction->write_back_value;
+    }
+
     // Delete current instruction and move instruction of last pipeline step here
     if (instruction != NULL)
         delete instruction;
-    regs_instr[REG_INSTR_ACCESS_MEM] = regs_instr[REG_INSTR_EXECUTE];
+    regs_instr[REG_INSTR_WRITE_BACK] = regs_instr[REG_INSTR_ACCESS_MEM];
 }
 
 void Machine::SetHeapPointer(int64_t address) {
@@ -369,11 +422,15 @@ void Machine::PrintPipeLineInstructions() {
     else
         printf("NULL\n");
 
+    printf("WrBack  : ");
+    if (regs_instr[REG_INSTR_WRITE_BACK] != NULL)
+        regs_instr[REG_INSTR_WRITE_BACK]->Print();
+    else
+        printf("NULL\n");
 }
 
 void Machine::DumpState() {
     printf("PC: %16.16lx\n", this->reg_pc);
-    printf("PrevPC: %16.16lx\n", this->reg_prev_pc);
     printf("HeapPointer: %16.16lx\n", this->heap_pointer);
     this->PrintRegisters();
     stats->PrintStats();
@@ -382,6 +439,8 @@ void Machine::DumpState() {
 void Machine::OneCycle() {
     ASSERT(!this->exit_flag);
     stats->IncreaseCycle();
+
+    this->WriteBack(regs_instr[REG_INSTR_WRITE_BACK]);
 
     this->AccessMemory(regs_instr[REG_INSTR_ACCESS_MEM]);
 

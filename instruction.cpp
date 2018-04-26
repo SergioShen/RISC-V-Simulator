@@ -667,6 +667,7 @@ bool Instruction::Decode() {
                             if (this->rs2 == 0) {
                                 this->instr_type = INSTR_CR;
                                 this->op_type = OP_JALR;
+                                this->rd = 1;
                             } else
                                 this->op_type = OP_ADD;
                         } else {
@@ -695,6 +696,57 @@ bool Instruction::Decode() {
                 DEBUG("OP Code %x not implemented\n", this->opcode);
                 return_value = false;
         }
+    }
+    switch (this->op_type) {
+        case OP_ADD:
+        case OP_MUL:
+        case OP_SUB:
+        case OP_SLL:
+        case OP_SLT:
+        case OP_XOR:
+        case OP_DIV:
+        case OP_SRL:
+        case OP_SRA:
+        case OP_OR:
+        case OP_REM:
+        case OP_AND:
+        case OP_ADDI:
+        case OP_SLLI:
+        case OP_SLTI:
+        case OP_XORI:
+        case OP_SRLI:
+        case OP_SRAI:
+        case OP_ORI:
+        case OP_ANDI:
+        case OP_ADDIW:
+        case OP_AUIPC:
+        case OP_LUI:
+        case OP_JAL:
+        case OP_LI:
+        case OP_SUBW:
+        case OP_ADDW:
+        case OP_MV:
+        case OP_SLLIW:
+        case OP_SRLIW:
+        case OP_SRAIW:
+        case OP_SLLW:
+        case OP_SRLW:
+        case OP_SRAW:
+        case OP_MULW:
+        case OP_LB:
+        case OP_LH:
+        case OP_LW:
+        case OP_LWSP:
+        case OP_LD:
+        case OP_LDSP:
+        case OP_LBU:
+        case OP_LHU:
+        case OP_JALR:
+            this->write_reg = true;
+            break;
+        default:
+            this->write_reg = false;
+            break;
     }
     decoded = true;
     return return_value;
