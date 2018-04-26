@@ -191,11 +191,6 @@ public:
 
 class Machine {
 private:
-    int64_t registers[32];
-    int64_t reg_pc;
-    int64_t reg_prev_pc;
-    int64_t reg_addr;
-    int64_t heap_pointer;
     Instruction *regs_instr[SIZE_REG_INSTR];
 
     Instruction *FetchInstruction();
@@ -211,6 +206,11 @@ private:
 public:
     bool exit_flag;
     Memory *main_memory;
+    int64_t registers[32];
+    int64_t reg_pc;
+    int64_t reg_prev_pc;
+    int64_t reg_addr;
+    int64_t heap_pointer;
 
     Machine();
 

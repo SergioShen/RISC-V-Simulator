@@ -1169,6 +1169,9 @@ void Machine::OneCycle() {
 
     this->Execute(regs_instr[REG_INSTR_EXECUTE]);
 
+    if (this->exit_flag)
+        return;
+
     if (regs_instr[REG_INSTR_DECODE] != NULL)
         if (!regs_instr[REG_INSTR_DECODE]->Decode()) {
             this->DumpState();
