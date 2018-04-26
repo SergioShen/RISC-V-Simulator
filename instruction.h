@@ -173,7 +173,9 @@ public:
                      */
     int8_t instr_type;
     int8_t decoded;
+    bool write_reg;
     int64_t instr_pc;
+    int64_t write_back_value;
 
     // Decode the instruction
     bool Decode();

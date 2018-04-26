@@ -15,7 +15,8 @@
 #define REG_INSTR_DECODE 0
 #define REG_INSTR_EXECUTE 1
 #define REG_INSTR_ACCESS_MEM 2
-#define SIZE_REG_INSTR 3
+#define REG_INSTR_WRITE_BACK 3
+#define SIZE_REG_INSTR 4
 
 class Machine {
 private:
@@ -24,8 +25,6 @@ private:
     Instruction *regs_instr[SIZE_REG_INSTR];
     int64_t registers[32];
     int64_t reg_pc;
-    int64_t reg_prev_pc;
-    int64_t reg_addr;
     int64_t heap_pointer;
 
     Instruction *FetchInstruction();
@@ -34,7 +33,9 @@ private:
 
     void AccessMemory(Instruction *instruction);
 
-    void HandleSystemCall();
+    void WriteBack(Instruction *instruction);
+
+    void HandleSystemCall(Instruction *instruction, int64_t system_call_number, int64_t system_call_arg);
 
     void SetHeapPointer(int64_t address);
 
