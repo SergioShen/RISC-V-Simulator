@@ -36,7 +36,7 @@ void Machine::HandleSystemCall(Instruction *instruction, int64_t system_call_num
     switch (system_call_number) {
         case RISCV_SYSCALL_EXIT:
             this->exit_flag = true;
-            printf("Process finished with exit code %d\n", (int32_t) system_call_arg);
+            printf("\nProcess finished with exit code %d\n", (int32_t) system_call_arg);
             break;
         case RISCV_SYSCALL_PCHAR:
             putchar((int8_t) system_call_arg);

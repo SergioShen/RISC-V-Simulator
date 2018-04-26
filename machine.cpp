@@ -475,3 +475,14 @@ void Machine::WriteMemory(int64_t address, int32_t size, int64_t value) {
         FATAL("Unable to write memory at %lx", address);
     }
 }
+
+bool Machine::IsExit() {
+    return exit_flag;
+}
+
+int64_t Machine::NextToExecute() {
+    if (regs_instr[REG_INSTR_EXECUTE] == NULL)
+        return NULL;
+    else
+        return regs_instr[REG_INSTR_EXECUTE]->instr_pc;
+}

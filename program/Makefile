@@ -1,24 +1,26 @@
 GCC=riscv64-unknown-elf-gcc
 OBJDUMP=riscv64-unknown-elf-objdump
-GCCFLAGS = --static
+GCCFLAGS = --static -w
 SRCS = $(wildcard *.c)
 OBJS = $(patsubst %.c,%,$(SRCS))
 DUMPS = $(patsubst %.c,%.disassm,$(SRCS))
+BUILD_PATH=bin
 
 
-all: $(OBJS)
+all:
+	mkdir -p $(BUILD_PATH)
+	make $(OBJS)
 
 lib.o: ../lib.c
-	$(GCC) $(GCCFLAGS) -c ../lib.c
+	$(GCC) $(GCCFLAGS) -c -o $(BUILD_PATH)/lib.o ../lib.c
 
 %: %.c lib.o
-	$(GCC) $(GCCFLAGS) -o bin/$@ $< lib.o
+	$(GCC) $(GCCFLAGS) -o $(BUILD_PATH)/$@ $< $(BUILD_PATH)/lib.o
 
 dump: $(DUMPS)
 
-%.disassm: %
-	$(OBJDUMP) -d bin/$< > bin/$@
+%.disassm: $(BUILD_PATH)/%
+	$(OBJDUMP) -d $< > $(BUILD_PATH)/$@
 
 clean:
-
-	rm lib.o; cd bin; rm -f $(OBJS) *.o *.disassm
+	rm -rf $(BUILD_PATH)
