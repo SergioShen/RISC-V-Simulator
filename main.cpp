@@ -7,6 +7,7 @@
 
 #include "utility.h"
 #include "machine.h"
+#include "stats.h"
 #include <cstring>
 
 // Global variables
@@ -14,6 +15,7 @@ bool initializing;
 bool debug_enabled;
 bool interactive;
 Machine *machine;
+Stats *stats;
 
 void PrintHelpMessage(FILE *file) {
     fprintf(file, "Usage: rsv-sim [options] <executable>\n");
@@ -41,6 +43,7 @@ void Initialize(int argc, char **argv) {
     interactive = false;
     initializing = true;
     machine = new Machine();
+    stats = new Stats();
 
     // Parse cmd arguments
     if (argc < 1) {
@@ -69,7 +72,7 @@ void Initialize(int argc, char **argv) {
 void Run() {
     for (;;) {
         machine->OneCycle();
-        if (machine->exit_flag)
+        if (machine->IsExit())
             break;
     }
 }
@@ -85,31 +88,30 @@ void InteractiveRun() {
             machine->PrintRegisters();
         } else if (!strcmp(cmd, "m") || !strcmp(cmd, "mem")) {
             scanf("%lx", &cmd_arg);
-            machine->main_memory->ReadMemory(cmd_arg, 8, &value);
+            machine->ReadMemory(cmd_arg, 8, &value);
             printf("Value at memory %lx: %16.16lx\n", cmd_arg, value);
         } else if (!strcmp(cmd, "s") || !strcmp(cmd, "single")) {
             machine->OneCycle();
-            if (machine->exit_flag)
+            if (machine->IsExit())
                 break;
         } else if (!strcmp(cmd, "r") || !strcmp(cmd, "run")) {
             scanf("%ld", &cmd_arg);
             ASSERT(cmd_arg > 0);
             for (int i = 0; i < cmd_arg; i++) {
                 machine->OneCycle();
-                if (machine->exit_flag)
+                if (machine->IsExit())
                     break;
             }
-            if (machine->exit_flag)
+            if (machine->IsExit())
                 break;
         } else if (!strcmp(cmd, "u") || !strcmp(cmd, "until")) {
             scanf("%lx", &cmd_arg);
-            while (machine->regs_instr[REG_INSTR_EXECUTE] == NULL
-                   || machine->regs_instr[REG_INSTR_EXECUTE]->instr_pc != cmd_arg) {
+            while (cmd_arg != machine->NextToExecute()) {
                 machine->OneCycle();
-                if (machine->exit_flag)
+                if (machine->IsExit())
                     break;
             }
-            if (machine->exit_flag)
+            if (machine->IsExit())
                 break;
         } else if (!strcmp(cmd, "q") || !strcmp(cmd, "quit")) {
             break;
@@ -125,5 +127,6 @@ int main(int argc, char **argv) {
         InteractiveRun();
     else
         Run();
+    stats->PrintStats();
     return 0;
 }

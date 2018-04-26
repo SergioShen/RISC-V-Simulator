@@ -4,11 +4,17 @@ GCCFLAGS = -O2 -w
 all: riscv-sim
 	cd program; make;
 
-riscv-sim: mem.o machine.o elf_reader.o exception.o main.o
-	$(GCC) $(GCCFLAGS) -o riscv-sim main.o machine.o mem.o elf_reader.o exception.o
+riscv-sim: mem.o stats.o instruction.o machine.o elf_reader.o exception.o main.o
+	$(GCC) $(GCCFLAGS) -o riscv-sim main.o stats.o instruction.o machine.o mem.o elf_reader.o exception.o
 
 mem.o: utility.h mem.h mem.cpp
 	$(GCC) $(GCCFLAGS) -c mem.cpp
+
+stats.o: utility.h stats.h stats.cpp
+	$(GCC) $(GCCFLAGS) -c stats.cpp
+
+instruction.o: utility.h instruction.h instruction.cpp
+	$(GCC) $(GCCFLAGS) -c instruction.cpp
 
 machine.o: utility.h mem.h machine.h machine.cpp
 	$(GCC) $(GCCFLAGS) -c machine.cpp
