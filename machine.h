@@ -192,8 +192,6 @@ public:
 
 class Machine {
 private:
-    Instruction *regs_instr[SIZE_REG_INSTR];
-
     Instruction *FetchInstruction();
 
     void Execute(Instruction *instruction);
@@ -207,6 +205,7 @@ private:
 public:
     bool exit_flag;
     Memory *main_memory;
+    Instruction *regs_instr[SIZE_REG_INSTR];
     int64_t registers[32];
     int64_t reg_pc;
     int64_t reg_prev_pc;

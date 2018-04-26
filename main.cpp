@@ -29,7 +29,7 @@ void PrintInteractiveHelpMessage(FILE *file) {
     fprintf(file, "m(mem) <hex addr>   : Show memory content at <hex addr>\n");
     fprintf(file, "s(single)           : Run single steps\n");
     fprintf(file, "r(run) <count>      : Run <count> steps\n");
-    fprintf(file, "u(until) <hex addr> : Run until PC at <hex addr>\n");
+    fprintf(file, "u(until) <hex addr> : Run until next instr to execute is <hex addr>\n");
     fprintf(file, "q(quit)             : Quit\n");
     fprintf(file, "h(help)             : Show this help message\n");
 }
@@ -103,7 +103,8 @@ void InteractiveRun() {
                 break;
         } else if (!strcmp(cmd, "u") || !strcmp(cmd, "until")) {
             scanf("%lx", &cmd_arg);
-            while (machine->reg_pc != cmd_arg) {
+            while (machine->regs_instr[REG_INSTR_EXECUTE] == NULL
+                   || machine->regs_instr[REG_INSTR_EXECUTE]->instr_pc != cmd_arg) {
                 machine->OneCycle();
                 if (machine->exit_flag)
                     break;
