@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "../lib.h"
 
 long ackermann(long m, long n) {
     long value = 0;

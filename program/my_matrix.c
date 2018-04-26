@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "../lib.h"
 
 void randomInit(long **a, long **b, int size) {
     srand(time(0));

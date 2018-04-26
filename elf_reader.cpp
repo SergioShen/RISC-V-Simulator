@@ -46,9 +46,19 @@ bool Machine::LoadExecutableFile(const char *file_name) {
 
         // Load segment into memory
         executable_file.seekg(program_header.p_offset, std::ios::beg);
-        for (int vi = 0; vi < program_header.p_filesz / 8; vi++) {
+        int vi;
+        for (vi = 0; vi < program_header.p_filesz / 8; vi++) {
             executable_file.read((char *) &value64, 8);
             this->main_memory->WriteMemory(program_header.p_vaddr + 8 * vi, 8, value64);
+        }
+
+        if (vi * 8 < program_header.p_filesz) {
+            // p_filesz is not a multiplier of 8
+            // There are several bytes that has not been load into memory
+            for (vi = vi * 8; vi < program_header.p_filesz; vi++) {
+                executable_file.read((char *) &value64, 1);
+                this->main_memory->WriteMemory(program_header.p_vaddr + vi, 1, value64);
+            }
         }
 
         if (i == elf_header.e_phnum - 1) {

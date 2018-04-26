@@ -15,7 +15,7 @@ char op_strings[][8] = {"ADD", "MUL", "SUB", "SLL", "MULH", "SLT", "XOR", "DIV",
                         "SH", "SW", "SD", "BEQ", "BNE", "BLT", "BGE", "AUIPC", "LUI", "JAL",
                         "LI", "SUBW", "ADDW", "J", "BEQZ", "BNEZ", "LWSP", "LDSP", "SWSP", "SDSP",
                         "MV", "BLTU", "BGEU", "JR", "SLLIW", "SRLIW", "SRAIW", "SLLW", "SRLW",
-                        "SRAW", "LBU", "LHU"
+                        "SRAW", "LBU", "LHU", "MULW"
 
 };
 
@@ -209,6 +209,8 @@ bool Instruction::Decode() {
                     case 0x0:
                         if (this->funct7 == 0x00) {
                             this->op_type = OP_ADDW;
+                        } else if (this->funct7 == 0x01) {
+                            this->op_type = OP_MULW;
                         } else if (this->funct7 == 0x20) {
                             this->op_type = OP_SUBW;
                         } else {
@@ -696,100 +698,109 @@ bool Instruction::Decode() {
                 return_value = false;
         }
     }
+    decoded = true;
     return return_value;
 }
 
 void Instruction::Print() {
-    switch (this->instr_type) {
-        case INSTR_R:
-            printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1], reg_strings[rs2]);
-            break;
-        case INSTR_I:
-            switch (this->op_type) {
-                case OP_LB:
-                case OP_LH:
-                case OP_LW:
-                case OP_LD:
-                    printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rd], imm, reg_strings[rs1]);
-                    break;
-                case OP_ECALL:
-                    printf("ecall\n");
-                    break;
-                default:
+    printf("PC=%16.16lx  ", instr_pc);
+    if (this->decoded) {
+        switch (this->instr_type) {
+            case INSTR_R:
+                printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1], reg_strings[rs2]);
+                break;
+            case INSTR_I:
+                switch (this->op_type) {
+                    case OP_LB:
+                    case OP_LH:
+                    case OP_LW:
+                    case OP_LD:
+                        printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rd], imm, reg_strings[rs1]);
+                        break;
+                    case OP_ECALL:
+                        printf("ecall\n");
+                        break;
+                    default:
+                        printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1], imm);
+                        break;
+                }
+                break;
+            case INSTR_S:
+                printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rs2], imm, reg_strings[rs1]);
+                break;
+            case INSTR_SB:
+                printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rs1], reg_strings[rs2], imm);
+                break;
+            case INSTR_U:
+            case INSTR_UJ:
+                printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
+                break;
+            case INSTR_CR:
+                printf("%8s %s\n", op_strings[op_type], reg_strings[rs1]);
+                break;
+            case INSTR_CI:
+                switch (this->op_type) {
+                    case OP_LI:
+                    case OP_LUI:
+                    case OP_LWSP:
+                    case OP_LDSP:
+                        printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
+                        break;
+                    default:
+                        printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rd], imm);
+                        break;
+                }
+                break;
+            case INSTR_CSS:
+                printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rs2], imm);
+                break;
+            case INSTR_CL:
+                printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rd], imm, reg_strings[rs1]);
+                break;
+            case INSTR_CS:
+                switch (this->op_type) {
+                    case OP_SW:
+                    case OP_SD:
+                        printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rs2], imm, reg_strings[rs1]);
+                        break;
+                    default:
+                        printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rd],
+                               reg_strings[rs2]);
+                }
+                break;
+            case INSTR_CB:
+                switch (this->op_type) {
+                    case OP_J:
+                        printf("%8s %d\n", op_strings[op_type], imm);
+                        break;
+                    case OP_MV:
+                        printf("%8s %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs2]);
+                        break;
+                    case OP_ADD:
+                        printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1],
+                               reg_strings[rs2]);
+                        break;
+                    case OP_SRLI:
+                    case OP_SRAI:
+                    case OP_ANDI:
+                        printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rd], imm);
+                        break;
+                    default:
+                        printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rs1], imm);
+                }
+                break;
+            case INSTR_CIW:
+                if (this->op_type == OP_ADDI) {
                     printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1], imm);
                     break;
-            }
-            break;
-        case INSTR_S:
-            printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rs2], imm, reg_strings[rs1]);
-            break;
-        case INSTR_SB:
-            printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rs1], reg_strings[rs2], imm);
-            break;
-        case INSTR_U:
-        case INSTR_UJ:
-            printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
-            break;
-        case INSTR_CR:
-            printf("%8s %s\n", op_strings[op_type], reg_strings[rs1]);
-            break;
-        case INSTR_CI:
-            switch (this->op_type) {
-                case OP_LI:
-                case OP_LUI:
-                case OP_LWSP:
-                case OP_LDSP:
-                    printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rd], imm);
-                    break;
-                default:
-                    printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rd], imm);
-                    break;
-            }
-            break;
-        case INSTR_CSS:
-            printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rs2], imm);
-            break;
-        case INSTR_CL:
-            printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rd], imm, reg_strings[rs1]);
-            break;
-        case INSTR_CS:
-            switch (this->op_type) {
-                case OP_SW:
-                case OP_SD:
-                    printf("%8s %s, %d(%s)\n", op_strings[op_type], reg_strings[rs2], imm, reg_strings[rs1]);
-                    break;
-                default:
-                    printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rd],
-                           reg_strings[rs2]);
-            }
-            break;
-        case INSTR_CB:
-            switch (this->op_type) {
-                case OP_J:
-                    printf("%8s %d\n", op_strings[op_type], imm);
-                    break;
-                case OP_MV:
-                    printf("%8s %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs2]);
-                    break;
-                case OP_ADD:
-                    printf("%8s %s, %s, %s\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1],
-                           reg_strings[rs2]);
-                    break;
-                case OP_SRLI:
-                case OP_SRAI:
-                case OP_ANDI:
-                    printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rd], imm);
-                    break;
-                default:
-                    printf("%8s %s, %d\n", op_strings[op_type], reg_strings[rs1], imm);
-            }
-            break;
-        case INSTR_CIW:
-            if (this->op_type == OP_ADDI) {
-                printf("%8s %s, %s, %d\n", op_strings[op_type], reg_strings[rd], reg_strings[rs1], imm);
-                break;
-            }
-        default: FATAL("Invalid op type %d\n", this->op_type);
+                }
+            default: FATAL("Invalid op type %d\n", this->op_type);
+        }
+    } else {
+        if (Decode_imm(binary_code, 0, 2, 0) == 0x3)
+            printf("%8.8x\n", binary_code);
+        else
+            printf("%8.4x\n", (int16_t) binary_code);
     }
 }
 
@@ -798,6 +809,8 @@ Instruction *Machine::FetchInstruction() {
     int64_t instruction_value;
     this->main_memory->ReadMemory(this->reg_pc, sizeof(int32_t), &instruction_value);
     instruction->binary_code = (int32_t) instruction_value;
+    instruction->instr_pc = reg_pc;
+    instruction->decoded = false;
     this->reg_prev_pc = reg_pc;
     if (Decode_imm(instruction->binary_code, 0, 2, 0) == 0x3)
         this->reg_pc += 4;
@@ -807,258 +820,295 @@ Instruction *Machine::FetchInstruction() {
 }
 
 void Machine::Execute(Instruction *instruction) {
-    int8_t rs1 = instruction->rs1, rs2 = instruction->rs2, rd = instruction->rd;
-    int32_t imm = instruction->imm;
-    switch (instruction->op_type) {
-        case OP_ADD:
-            registers[rd] = registers[rs1] + registers[rs2];
-            break;
-        case OP_MUL:
-            registers[rd] = registers[rs1] * registers[rs2];
-            break;
-        case OP_SUB:
-            registers[rd] = registers[rs1] - registers[rs2];
-            break;
-        case OP_SLL:
-            registers[rd] = registers[rs1] << (registers[rs2] & 0b111111);
-            break;
-        case OP_SLT:
-            registers[rd] = registers[rs1] < registers[rs2] ? 1 : 0;
-            break;
-        case OP_XOR:
-            registers[rd] = registers[rs1] ^ registers[rs2];
-            break;
-        case OP_DIV:
-            registers[rd] = registers[rs1] / registers[rs2];
-            break;
-        case OP_SRL:
-            registers[rd] = ((uint64_t) registers[rs1]) << (registers[rs2] & 0b111111);
-            break;
-        case OP_SRA:
-            registers[rd] = ((int64_t) registers[rs1]) << (registers[rs2] & 0b111111);
-            break;
-        case OP_OR:
-            registers[rd] = registers[rs1] | registers[rs2];
-            break;
-        case OP_REM:
-            registers[rd] = registers[rs1] % registers[rs2];
-            break;
-        case OP_AND:
-            registers[rd] = registers[rs1] & registers[rs2];
-            break;
-        case OP_LB:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_LH:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_LW:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_LD:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_ADDI:
-            if (instruction->instr_type == INSTR_CIW) // ADDI4SPN
-                registers[rd] = (registers[REG_sp] << 1) + imm;
-            else
-                registers[rd] = registers[rs1] + imm;
-            break;
-        case OP_SLLI:
-            registers[rd] = registers[rs1] << (imm & 0b111111);
-            break;
-        case OP_SLTI:
-            registers[rd] = registers[rs1] < imm ? 1 : 0;
-            break;
-        case OP_XORI:
-            registers[rd] = registers[rs1] ^ imm;
-            break;
-        case OP_SRLI:
-            registers[rd] = ((uint64_t) registers[rs1]) >> (imm & 0b111111);
-            break;
-        case OP_SRAI:
-            registers[rd] = ((int64_t) registers[rs1]) >> (imm & 0b111111);
-            break;
-        case OP_ORI:
-            registers[rd] = registers[rs1] | imm;
-            break;
-        case OP_ANDI:
-            registers[rd] = registers[rs1] & imm;
-            break;
-        case OP_ADDIW:
-            registers[rd] = (int64_t) ((int32_t) (registers[rs1] + imm));
-            break;
-        case OP_JALR:
-            if (instruction->instr_type == INSTR_CR) {
-                registers[1] = reg_prev_pc + 2;
+    bool jump = false;
+    if (instruction != NULL) {
+        int8_t rs1 = instruction->rs1, rs2 = instruction->rs2, rd = instruction->rd;
+        int32_t imm = instruction->imm;
+        switch (instruction->op_type) {
+            case OP_ADD:
+                registers[rd] = registers[rs1] + registers[rs2];
+                break;
+            case OP_MUL:
+                registers[rd] = registers[rs1] * registers[rs2];
+                break;
+            case OP_SUB:
+                registers[rd] = registers[rs1] - registers[rs2];
+                break;
+            case OP_SLL:
+                registers[rd] = registers[rs1] << (registers[rs2] & 0b111111);
+                break;
+            case OP_SLT:
+                registers[rd] = registers[rs1] < registers[rs2] ? 1 : 0;
+                break;
+            case OP_XOR:
+                registers[rd] = registers[rs1] ^ registers[rs2];
+                break;
+            case OP_DIV:
+                registers[rd] = registers[rs1] / registers[rs2];
+                break;
+            case OP_SRL:
+                registers[rd] = ((uint64_t) registers[rs1]) << (registers[rs2] & 0b111111);
+                break;
+            case OP_SRA:
+                registers[rd] = ((int64_t) registers[rs1]) << (registers[rs2] & 0b111111);
+                break;
+            case OP_OR:
+                registers[rd] = registers[rs1] | registers[rs2];
+                break;
+            case OP_REM:
+                registers[rd] = registers[rs1] % registers[rs2];
+                break;
+            case OP_AND:
+                registers[rd] = registers[rs1] & registers[rs2];
+                break;
+            case OP_LB:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_LH:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_LW:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_LD:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_ADDI:
+                if (instruction->instr_type == INSTR_CIW) // ADDI4SPN
+                    registers[rd] = (registers[REG_sp] << 1) + imm;
+                else
+                    registers[rd] = registers[rs1] + imm;
+                break;
+            case OP_SLLI:
+                registers[rd] = registers[rs1] << (imm & 0b111111);
+                break;
+            case OP_SLTI:
+                registers[rd] = registers[rs1] < imm ? 1 : 0;
+                break;
+            case OP_XORI:
+                registers[rd] = registers[rs1] ^ imm;
+                break;
+            case OP_SRLI:
+                registers[rd] = ((uint64_t) registers[rs1]) >> (imm & 0b111111);
+                break;
+            case OP_SRAI:
+                registers[rd] = ((int64_t) registers[rs1]) >> (imm & 0b111111);
+                break;
+            case OP_ORI:
+                registers[rd] = registers[rs1] | imm;
+                break;
+            case OP_ANDI:
+                registers[rd] = registers[rs1] & imm;
+                break;
+            case OP_ADDIW:
+                registers[rd] = (int64_t) ((int32_t) (registers[rs1] + imm));
+                break;
+            case OP_JALR:
+                if (instruction->instr_type == INSTR_CR) {
+                    registers[1] = instruction->instr_pc + 2;
+                    reg_pc = registers[rs1];
+                    jump = true;
+                } else {
+                    registers[rd] = instruction->instr_pc + 4;
+                    reg_pc = ((registers[rs1] + imm) >> 1) << 1;
+                    jump = true;
+                }
+                break;
+            case OP_ECALL:
+                this->HandleSystemCall();
+            case OP_SB:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_SH:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_SW:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_SD:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_BEQ:
+                if (registers[rs1] == registers[rs2]) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_BNE:
+                if (registers[rs1] != registers[rs2]) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_BLT:
+                if (registers[rs1] < registers[rs2]) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_BGE:
+                if (registers[rs1] >= registers[rs2]) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_AUIPC:
+                registers[rd] = instruction->instr_pc + imm;
+                break;
+            case OP_LUI:
+                registers[rd] = imm;
+                break;
+            case OP_JAL:
+                registers[rd] = instruction->instr_pc + 4;
+                reg_pc = instruction->instr_pc + imm;
+                jump = true;
+                break;
+            case OP_LI:
+                registers[rd] = imm;
+                break;
+            case OP_SUBW:
+                registers[rd] = (int64_t) ((int32_t) (registers[rd] - registers[rs2]));
+                break;
+            case OP_ADDW:
+                registers[rd] = (int64_t) ((int32_t) (registers[rd] + registers[rs2]));
+                break;
+            case OP_J:
+                reg_pc = instruction->instr_pc + imm;
+                jump = true;
+                break;
+            case OP_BEQZ:
+                if (registers[rs1] == 0) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_BNEZ:
+                if (registers[rs1] != 0) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_LWSP:
+                reg_addr = registers[REG_sp] + imm;
+                break;
+            case OP_LDSP:
+                reg_addr = registers[REG_sp] + imm;
+                break;
+            case OP_SWSP:
+                reg_addr = registers[REG_sp] + imm;
+                break;
+            case OP_SDSP:
+                reg_addr = registers[REG_sp] + imm;
+                break;
+            case OP_MV:
+                registers[rd] = registers[rs2];
+                break;
+            case OP_BLTU:
+                if ((uint64_t) registers[rs1] < (uint64_t) registers[rs2]) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_BGEU:
+                if ((uint64_t) registers[rs1] >= (uint64_t) registers[rs2]) {
+                    reg_pc = instruction->instr_pc + imm;
+                    jump = true;
+                }
+                break;
+            case OP_JR:
                 reg_pc = registers[rs1];
-            } else {
-                registers[rd] = reg_prev_pc + 4;
-                reg_pc = ((registers[rs1] + imm) >> 1) << 1;
-            }
-            break;
-        case OP_ECALL:
-            this->HandleSystemCall();
-        case OP_SB:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_SH:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_SW:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_SD:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_BEQ:
-            if (registers[rs1] == registers[rs2])
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_BNE:
-            if (registers[rs1] != registers[rs2])
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_BLT:
-            if (registers[rs1] < registers[rs2])
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_BGE:
-            if (registers[rs1] >= registers[rs2])
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_AUIPC:
-            registers[rd] = reg_prev_pc + imm;
-            break;
-        case OP_LUI:
-            registers[rd] = imm;
-            break;
-        case OP_JAL:
-            registers[rd] = reg_prev_pc + 4;
-            reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_LI:
-            registers[rd] = imm;
-            break;
-        case OP_SUBW:
-            registers[rd] = (int64_t) ((int32_t) (registers[rd] - registers[rs2]));
-            break;
-        case OP_ADDW:
-            registers[rd] = (int64_t) ((int32_t) (registers[rd] + registers[rs2]));
-            break;
-        case OP_J:
-            reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_BEQZ:
-            if (registers[rs1] == 0)
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_BNEZ:
-            if (registers[rs1] != 0)
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_LWSP:
-            reg_addr = registers[REG_sp] + imm;
-            break;
-        case OP_LDSP:
-            reg_addr = registers[REG_sp] + imm;
-            break;
-        case OP_SWSP:
-            reg_addr = registers[REG_sp] + imm;
-            break;
-        case OP_SDSP:
-            reg_addr = registers[REG_sp] + imm;
-            break;
-        case OP_MV:
-            registers[rd] = registers[rs2];
-            break;
-        case OP_BLTU:
-            if ((uint64_t) registers[rs1] < (uint64_t) registers[rs2])
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_BGEU:
-            if ((uint64_t) registers[rs1] >= (uint64_t) registers[rs2])
-                reg_pc = reg_prev_pc + imm;
-            break;
-        case OP_JR:
-            reg_pc = registers[rs1];
-            break;
-        case OP_SLLIW:
-            registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (imm & 0b11111));
-            break;
-        case OP_SRLIW:
-            registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (imm & 0b11111));
-            break;
-        case OP_SRAIW:
-            registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (imm & 0b11111));
-            break;
-        case OP_SLLW:
-            registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (registers[rs2] & 0b11111));
-            break;
-        case OP_SRLW:
-            registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
-            break;
-        case OP_SRAW:
-            registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
-            break;
-        case OP_LBU:
-            reg_addr = registers[rs1] + imm;
-            break;
-        case OP_LHU:
-            reg_addr = registers[rs1] + imm;
-            break;
-        default: FATAL("Invalid op type %d\n", instruction->op_type);
+                jump = true;
+                break;
+            case OP_SLLIW:
+                registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (imm & 0b11111));
+                break;
+            case OP_SRLIW:
+                registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (imm & 0b11111));
+                break;
+            case OP_SRAIW:
+                registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (imm & 0b11111));
+                break;
+            case OP_SLLW:
+                registers[rd] = (int64_t) (((int32_t) registers[rs1]) << (registers[rs2] & 0b11111));
+                break;
+            case OP_SRLW:
+                registers[rd] = (int64_t) (((uint32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
+                break;
+            case OP_SRAW:
+                registers[rd] = (int64_t) (((int32_t) registers[rs1]) >> (registers[rs2] & 0b11111));
+                break;
+            case OP_LBU:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_LHU:
+                reg_addr = registers[rs1] + imm;
+                break;
+            case OP_MULW:
+                registers[rd] = (int64_t) ((int32_t) registers[rs1] * (int32_t) registers[rs2]);
+                break;
+            default: FATAL("Invalid op type %d\n", instruction->op_type);
+        }
     }
+
+    // Delete current instruction and move instruction of last pipeline step here
+    if (jump) {
+        if (regs_instr[REG_INSTR_DECODE] != NULL) {
+            delete regs_instr[REG_INSTR_DECODE];
+            regs_instr[REG_INSTR_DECODE] = NULL;
+        }
+        regs_instr[REG_INSTR_EXECUTE] = NULL;
+    } else
+        regs_instr[REG_INSTR_EXECUTE] = regs_instr[REG_INSTR_DECODE];
 }
 
-void Machine::ReadMemory(Instruction *instruction) {
-    switch (instruction->op_type) {
-        case OP_LB:
-            this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
-            break;
-        case OP_LH:
-            this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
-            break;
-        case OP_LW:
-        case OP_LWSP:
-            this->main_memory->ReadMemory(reg_addr, 4, &registers[instruction->rd]);
-            break;
-        case OP_LD:
-        case OP_LDSP:
-            this->main_memory->ReadMemory(reg_addr, 8, &registers[instruction->rd]);
-            break;
-        case OP_LBU:
-            this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
-            registers[instruction->rd] = (int64_t) ((uint8_t) registers[instruction->rd]);
-            break;
-        case OP_LHU:
-            this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
-            registers[instruction->rd] = (int64_t) ((uint16_t) registers[instruction->rd]);
-            break;
-        default:
-            break;
+void Machine::AccessMemory(Instruction *instruction) {
+    if (instruction != NULL) {
+        switch (instruction->op_type) {
+            case OP_LB:
+                this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
+                break;
+            case OP_LH:
+                this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
+                break;
+            case OP_LW:
+            case OP_LWSP:
+                this->main_memory->ReadMemory(reg_addr, 4, &registers[instruction->rd]);
+                break;
+            case OP_LD:
+            case OP_LDSP:
+                this->main_memory->ReadMemory(reg_addr, 8, &registers[instruction->rd]);
+                break;
+            case OP_LBU:
+                this->main_memory->ReadMemory(reg_addr, 1, &registers[instruction->rd]);
+                registers[instruction->rd] = (int64_t) ((uint8_t) registers[instruction->rd]);
+                break;
+            case OP_LHU:
+                this->main_memory->ReadMemory(reg_addr, 2, &registers[instruction->rd]);
+                registers[instruction->rd] = (int64_t) ((uint16_t) registers[instruction->rd]);
+                break;
+            case OP_SB:
+                this->main_memory->WriteMemory(reg_addr, 1, registers[instruction->rs2]);
+                break;
+            case OP_SH:
+                this->main_memory->WriteMemory(reg_addr, 2, registers[instruction->rs2]);
+                break;
+            case OP_SW:
+            case OP_SWSP:
+                this->main_memory->WriteMemory(reg_addr, 4, registers[instruction->rs2]);
+                break;
+            case OP_SD:
+            case OP_SDSP:
+                this->main_memory->WriteMemory(reg_addr, 8, registers[instruction->rs2]);
+                break;
+            default:
+                break;
+        }
     }
-}
 
-void Machine::WriteBack(Instruction *instruction) {
-    switch (instruction->op_type) {
-        case OP_SB:
-            this->main_memory->WriteMemory(reg_addr, 1, registers[instruction->rs2]);
-            break;
-        case OP_SH:
-            this->main_memory->WriteMemory(reg_addr, 2, registers[instruction->rs2]);
-            break;
-        case OP_SW:
-        case OP_SWSP:
-            this->main_memory->WriteMemory(reg_addr, 4, registers[instruction->rs2]);
-            break;
-        case OP_SD:
-        case OP_SDSP:
-            this->main_memory->WriteMemory(reg_addr, 8, registers[instruction->rs2]);
-            break;
-        default:
-            break;
-    }
+    // Delete current instruction and move instruction of last pipeline step here
+    if (instruction != NULL)
+        delete instruction;
+    regs_instr[REG_INSTR_ACCESS_MEM] = regs_instr[REG_INSTR_EXECUTE];
 }
 
 void Machine::SetHeapPointer(int64_t address) {
@@ -1068,10 +1118,15 @@ void Machine::SetHeapPointer(int64_t address) {
 Machine::Machine() {
     this->main_memory = new Memory();
     memset(this->registers, 0, sizeof(this->registers));
+    for (int i = 0; i < SIZE_REG_INSTR; i++)
+        this->regs_instr[i] = NULL;
 }
 
 Machine::~Machine() {
     delete main_memory;
+    for (int i = 0; i < SIZE_REG_INSTR; i++)
+        if (this->regs_instr[i] != NULL)
+            delete regs_instr[i];
 }
 
 void Machine::PrintRegisters() {
@@ -1083,6 +1138,28 @@ void Machine::PrintRegisters() {
     }
 }
 
+void Machine::PrintPipeLineInstructions() {
+    printf("\n");
+    printf("Decode  : ");
+    if (regs_instr[REG_INSTR_DECODE] != NULL)
+        regs_instr[REG_INSTR_DECODE]->Print();
+    else
+        printf("NULL\n");
+
+    printf("Execute : ");
+    if (regs_instr[REG_INSTR_EXECUTE] != NULL)
+        regs_instr[REG_INSTR_EXECUTE]->Print();
+    else
+        printf("NULL\n");
+
+    printf("AccMem  : ");
+    if (regs_instr[REG_INSTR_ACCESS_MEM] != NULL)
+        regs_instr[REG_INSTR_ACCESS_MEM]->Print();
+    else
+        printf("NULL\n");
+
+}
+
 void Machine::DumpState() {
     printf("PC: %16.16lx\n", this->reg_pc);
     printf("PrevPC: %16.16lx\n", this->reg_prev_pc);
@@ -1090,19 +1167,27 @@ void Machine::DumpState() {
     this->PrintRegisters();
 }
 
-void Machine::OneInstruction() {
+void Machine::OneCycle() {
     ASSERT(!this->exit_flag);
 
-    Instruction *instruction = this->FetchInstruction();
-    if (!instruction->Decode()) {
-        this->DumpState();
-        FATAL("Decode error, machine state dumped\n");
+    this->AccessMemory(regs_instr[REG_INSTR_ACCESS_MEM]);
+
+    this->Execute(regs_instr[REG_INSTR_EXECUTE]);
+
+    if (this->exit_flag)
+        return;
+
+    if (regs_instr[REG_INSTR_DECODE] != NULL)
+        if (!regs_instr[REG_INSTR_DECODE]->Decode()) {
+            this->DumpState();
+            FATAL("Decode error, machine state dumped\n");
+        }
+
+    regs_instr[REG_INSTR_DECODE] = this->FetchInstruction();
+
+    registers[REG_zero] = 0;
+
+    if (debug_enabled) {
+        this->PrintPipeLineInstructions();
     }
-    DEBUG("PC: %16.16lx ", this->reg_prev_pc);
-    if (debug_enabled)
-        instruction->Print();
-    this->Execute(instruction);
-    this->ReadMemory(instruction);
-    this->WriteBack(instruction);
-    registers[REG_zero] = 0x0;
 }

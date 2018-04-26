@@ -45,6 +45,11 @@
 #define REG_t5 30
 #define REG_t6 31
 
+#define REG_INSTR_DECODE 0
+#define REG_INSTR_EXECUTE 1
+#define REG_INSTR_ACCESS_MEM 2
+#define SIZE_REG_INSTR 3
+
 // OP type macro definitions
 #define OP_ADD 0
 #define OP_MUL 1
@@ -107,6 +112,7 @@
 #define OP_SRAW 58
 #define OP_LBU 59
 #define OP_LHU 60
+#define OP_MULW 61
 
 // Instr type macro definitions
 #define INSTR_R 0
@@ -174,6 +180,8 @@ public:
                      * but this is one of the OP_*** values defined above
                      */
     int8_t instr_type;
+    int8_t decoded;
+    int64_t instr_pc;
 
     // Decode the instruction
     bool Decode();
@@ -184,19 +192,11 @@ public:
 
 class Machine {
 private:
-    int64_t registers[32];
-    int64_t reg_pc;
-    int64_t reg_prev_pc;
-    int64_t reg_addr;
-    int64_t heap_pointer;
-
     Instruction *FetchInstruction();
 
     void Execute(Instruction *instruction);
 
-    void ReadMemory(Instruction *instruction);
-
-    void WriteBack(Instruction *instruction);
+    void AccessMemory(Instruction *instruction);
 
     void HandleSystemCall();
 
@@ -205,6 +205,12 @@ private:
 public:
     bool exit_flag;
     Memory *main_memory;
+    Instruction *regs_instr[SIZE_REG_INSTR];
+    int64_t registers[32];
+    int64_t reg_pc;
+    int64_t reg_prev_pc;
+    int64_t reg_addr;
+    int64_t heap_pointer;
 
     Machine();
 
@@ -214,7 +220,9 @@ public:
 
     void PrintRegisters();
 
-    void OneInstruction();
+    void PrintPipeLineInstructions();
+
+    void OneCycle();
 
     void DumpState();
 };

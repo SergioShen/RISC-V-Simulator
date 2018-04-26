@@ -1,65 +1,26 @@
-#include "lib.h"
+#include <stdio.h>
 
-#define malloc mem_alloc
-#define rand rand_int
-#define srand set_rand_seed
+int result[42] = {0};
 
-int partition(int *array, int left, int right) {
-    int i = left, j = right;
-    int pivot_value = array[left];
-    while (i != j) {
-        while ((array[j] > pivot_value) && (i < j))
-            j--;
-        if (i < j) {
-            array[i] = array[j];
-            i++;
-        }
-        while ((array[i] <= pivot_value) && (i < j))
-            i++;
-        if (i < j) {
-            array[j] = array[i];
-            j--;
-        }
+//result: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+
+void qsort(int l, int r) {
+    int x = result[l], i = l, j = r;
+    if (l >= r) return;
+    while (i < j) {
+        while (i < j && result[j] >= x) j--;
+        result[i] = result[j];
+        while (i < j && result[i] <= x) i++;
+        result[j] = result[i];
     }
-    array[i] = pivot_value;
-    return i;
-}
-
-void quick_sort(int *array, int left, int right) {
-    if (right <= left)
-        return;
-
-    int pivot = partition(array, left, right);
-    quick_sort(array, left, pivot - 1);
-    quick_sort(array, pivot + 1, right);
-}
-
-void random_init(int *array, int length) {
-    srand(time());
-    for (int i = 0; i < length; i++)
-        array[i] = rand();
+    result[i] = x;
+    qsort(l, i - 1);
+    qsort(i + 1, r);
 }
 
 int main() {
-    int length;
-    print_string("Please give the number of array size: ");
-    read_int(&length);
-
-    int *array_point = (int *) malloc(length * sizeof(int));
-    random_init(array_point, length);
-
-    long start_time = time();
-    quick_sort(array_point, 0, length - 1);
-    long finish_time = time();
-
-    if (finish_time - start_time <= 0) {
-        print_string("Insufficient duration - Increase the array size\n");
-        return 1;
-    }
-    print_string("Array size: ");
-    print_int(length);
-    print_string(", Duration: ");
-    print_long(finish_time - start_time);
-    print_string(" sec.\n");
+    for (int i = 40; i >= 1; i--)
+        result[i] = i;
+    qsort(0, 39);
     return 0;
-}
+}  

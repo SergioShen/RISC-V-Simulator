@@ -1,41 +1,24 @@
 GCC=riscv64-unknown-elf-gcc
 OBJDUMP=riscv64-unknown-elf-objdump
 GCCFLAGS = --static
+SRCS = $(wildcard *.c)
+OBJS = $(patsubst %.c,%,$(SRCS))
+DUMPS = $(patsubst %.c,%.disassm,$(SRCS))
 
-all: test qsort ackermann matrix
 
-test: test.o lib.o
-	$(GCC) $(GCCFLAGS) -o test test.o lib.o
+all: $(OBJS)
 
-qsort: qsort.o lib.o
-	$(GCC) $(GCCFLAGS) -o qsort qsort.o lib.o
+lib.o: ../lib.c
+	$(GCC) $(GCCFLAGS) -c ../lib.c
 
-ackermann: ackermann.o lib.o
-	$(GCC) $(GCCFLAGS) -o ackermann ackermann.o lib.o
+%: %.c lib.o
+	$(GCC) $(GCCFLAGS) -o bin/$@ $< lib.o
 
-matrix: matrix.o lib.o
-	$(GCC) $(GCCFLAGS) -o matrix matrix.o lib.o
+dump: $(DUMPS)
 
-test.o: test.c
-	$(GCC) $(GCCFLAGS) -c test.c
-
-lib.o: lib.c
-	$(GCC) $(GCCFLAGS) -c lib.c
-
-qsort.o: qsort.c
-	$(GCC) $(GCCFLAGS) -c qsort.c
-
-ackermann.o: ackermann.c
-	$(GCC) $(GCCFLAGS) -c ackermann.c
-
-matrix.o: matrix.c
-	$(GCC) $(GCCFLAGS) -c matrix.c
-
-dump: test qsort
-	$(OBJDUMP) -d test > test.disassm
-	$(OBJDUMP) -d qsort > qsort.disassm
-	$(OBJDUMP) -d ackermann > ackermann.disassm
-	$(OBJDUMP) -d matrix > matrix.disassm
+%.disassm: %
+	$(OBJDUMP) -d bin/$< > bin/$@
 
 clean:
-	rm -f *.o *.disassm test qsort ackermann matrix
+
+	rm lib.o; cd bin; rm -f $(OBJS) *.o *.disassm
