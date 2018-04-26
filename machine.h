@@ -112,6 +112,7 @@
 #define OP_SRAW 58
 #define OP_LBU 59
 #define OP_LHU 60
+#define OP_MULW 61
 
 // Instr type macro definitions
 #define INSTR_R 0

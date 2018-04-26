@@ -15,7 +15,7 @@ char op_strings[][8] = {"ADD", "MUL", "SUB", "SLL", "MULH", "SLT", "XOR", "DIV",
                         "SH", "SW", "SD", "BEQ", "BNE", "BLT", "BGE", "AUIPC", "LUI", "JAL",
                         "LI", "SUBW", "ADDW", "J", "BEQZ", "BNEZ", "LWSP", "LDSP", "SWSP", "SDSP",
                         "MV", "BLTU", "BGEU", "JR", "SLLIW", "SRLIW", "SRAIW", "SLLW", "SRLW",
-                        "SRAW", "LBU", "LHU"
+                        "SRAW", "LBU", "LHU", "MULW"
 
 };
 
@@ -209,6 +209,8 @@ bool Instruction::Decode() {
                     case 0x0:
                         if (this->funct7 == 0x00) {
                             this->op_type = OP_ADDW;
+                        } else if (this->funct7 == 0x01) {
+                            this->op_type = OP_MULW;
                         } else if (this->funct7 == 0x20) {
                             this->op_type = OP_SUBW;
                         } else {
@@ -1040,6 +1042,9 @@ void Machine::Execute(Instruction *instruction) {
                 break;
             case OP_LHU:
                 reg_addr = registers[rs1] + imm;
+                break;
+            case OP_MULW:
+                registers[rd] = (int64_t) ((int32_t) registers[rs1] * (int32_t) registers[rs2]);
                 break;
             default: FATAL("Invalid op type %d\n", instruction->op_type);
         }
