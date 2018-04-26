@@ -14,8 +14,8 @@
 
 class MemoryPage {
 public:
-    int64_t start_address;
-    char *content;
+    int64_t start_address;          // start address of this page (4096 aligned)
+    char *content;                  // memory block of this page
 
     MemoryPage(int64_t start_address);
 
@@ -35,7 +35,7 @@ bool operator<(const MemoryPage &a, const MemoryPage &b);
 
 class Memory {
 private:
-    std::set<MemoryPage> memory_page_list;
+    std::set<MemoryPage> memory_page_list;      // use a set (speed up searching) to store memory pages
 
     // Find the page that contains accessed address
     std::set<MemoryPage>::iterator FindPage(int64_t address);

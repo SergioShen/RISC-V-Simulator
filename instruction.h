@@ -162,20 +162,20 @@ private:
     void ImmSignExtend(int num_of_bits);
 
 public:
-    int32_t binary_code;
-    int32_t imm;
-    int8_t funct3, funct7; // funct3 may also used by funct4
+    int32_t binary_code;            // binary code of the instruction
+    int32_t imm;                    // immediate decoded from binary code
+    int8_t funct3, funct7;          // funct3 may also used by funct4
     int8_t opcode;
     int8_t rs1, rs2, rd;
-    int8_t op_type; /* This is different from opcode,
-                     * opcode is the value of 7 bits in instr code,
-                     * but this is one of the OP_*** values defined above
-                     */
-    int8_t instr_type;
-    int8_t decoded;
-    bool write_reg;
-    int64_t instr_pc;
-    int64_t write_back_value;
+    int8_t op_type;                 /* This is different from opcode,
+                                     * opcode is the value of 7 bits in instr code,
+                                     * but this is one of the OP_*** values defined above
+                                     */
+    int8_t instr_type;              // type of the instruction
+    int8_t decoded;                 // has the instruction been decoded?
+    bool write_reg;                 // do the instruction need to write registers?
+    int64_t instr_pc;               // pc of this instruction
+    int64_t write_back_value;       // value to be write back
 
     // Decode the instruction
     bool Decode();

@@ -20,23 +20,29 @@
 
 class Machine {
 private:
-    bool exit_flag;
-    Memory *main_memory;
-    Instruction *regs_instr[SIZE_REG_INSTR];
-    int64_t registers[32];
-    int64_t reg_pc;
-    int64_t heap_pointer;
+    bool exit_flag;                             // exit flag to indicate if the program should exit
+    Memory *main_memory;                        // memory with memory management
+    Instruction *regs_instr[SIZE_REG_INSTR];    // Save instructions for every pipeline stage
+    int64_t registers[32];                      // register file
+    int64_t reg_pc;                             // pc register
+    int64_t heap_pointer;                       // points to top of heap
 
+    // Fetch stage of pipeline
     Instruction *FetchInstruction();
 
+    // Execute stage of pipeline
     void Execute(Instruction *instruction);
 
+    // Access Memory stage of pipeline
     void AccessMemory(Instruction *instruction);
 
+    // Write Back stage of pipeline
     void WriteBack(Instruction *instruction);
 
+    // System call handler
     void HandleSystemCall(Instruction *instruction, int64_t system_call_number, int64_t system_call_arg);
 
+    // Initialize the heap pointer
     void SetHeapPointer(int64_t address);
 
 public:
@@ -45,30 +51,32 @@ public:
 
     ~Machine();
 
+    // Load executable file into memory
     bool LoadExecutableFile(const char *file_name);
 
+    // Print values of all registers
     void PrintRegisters();
 
+    // Print instructions of all pipeline stage
     void PrintPipeLineInstructions();
 
+    // Run a cycle
     void OneCycle();
 
+    // Print machine status
     void DumpState();
 
+    // Read memory
     void ReadMemory(int64_t address, int32_t size, int64_t *value);
 
+    // Write memory
     void WriteMemory(int64_t address, int32_t size, int64_t value);
 
-    bool IsExit() {
-        return exit_flag;
-    }
+    // Is machine going to exit?
+    bool IsExit();
 
-    int64_t NextToExecute() {
-        if (regs_instr[REG_INSTR_EXECUTE] == NULL)
-            return NULL;
-        else
-            return regs_instr[REG_INSTR_EXECUTE]->instr_pc;
-    }
+    // Get next instruction which is going to be processed in Execute stage
+    int64_t NextToExecute();
 };
 
 #endif //RISC_V_SIMULATOR_MACHINE_H
