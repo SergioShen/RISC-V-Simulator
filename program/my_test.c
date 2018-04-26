@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "../lib.h"
 
 int main() {
     char string[128];
