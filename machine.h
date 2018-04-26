@@ -10,6 +10,7 @@
 
 #include "utility.h"
 #include "mem.h"
+#include "stats.h"
 
 // Register macro definitions
 #define REG_zero 0
@@ -131,6 +132,7 @@
 #define INSTR_CJ 13
 
 extern char op_strings[][8];
+extern Stats *stats;
 
 // Macros for decode
 #define Decode_opcode(instr_code) ((int8_t) (instr_code & 0b1111111))

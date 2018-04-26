@@ -822,6 +822,7 @@ Instruction *Machine::FetchInstruction() {
 void Machine::Execute(Instruction *instruction) {
     bool jump = false;
     if (instruction != NULL) {
+        stats->IncreaseInstruction();
         int8_t rs1 = instruction->rs1, rs2 = instruction->rs2, rd = instruction->rd;
         int32_t imm = instruction->imm;
         switch (instruction->op_type) {
@@ -1057,6 +1058,7 @@ void Machine::Execute(Instruction *instruction) {
             regs_instr[REG_INSTR_DECODE] = NULL;
         }
         regs_instr[REG_INSTR_EXECUTE] = NULL;
+        stats->IncreaseStallByCtrl();
     } else
         regs_instr[REG_INSTR_EXECUTE] = regs_instr[REG_INSTR_DECODE];
 }
@@ -1165,10 +1167,12 @@ void Machine::DumpState() {
     printf("PrevPC: %16.16lx\n", this->reg_prev_pc);
     printf("HeapPointer: %16.16lx\n", this->heap_pointer);
     this->PrintRegisters();
+    stats->PrintStats();
 }
 
 void Machine::OneCycle() {
     ASSERT(!this->exit_flag);
+    stats->IncreaseCycle();
 
     this->AccessMemory(regs_instr[REG_INSTR_ACCESS_MEM]);
 

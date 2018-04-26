@@ -7,6 +7,7 @@
 
 #include "utility.h"
 #include "machine.h"
+#include "stats.h"
 #include <cstring>
 
 // Global variables
@@ -14,6 +15,7 @@ bool initializing;
 bool debug_enabled;
 bool interactive;
 Machine *machine;
+Stats *stats;
 
 void PrintHelpMessage(FILE *file) {
     fprintf(file, "Usage: rsv-sim [options] <executable>\n");
@@ -41,6 +43,7 @@ void Initialize(int argc, char **argv) {
     interactive = false;
     initializing = true;
     machine = new Machine();
+    stats = new Stats();
 
     // Parse cmd arguments
     if (argc < 1) {
@@ -124,5 +127,6 @@ int main(int argc, char **argv) {
         InteractiveRun();
     else
         Run();
+    stats->PrintStats();
     return 0;
 }
