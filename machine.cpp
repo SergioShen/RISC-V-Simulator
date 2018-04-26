@@ -1191,3 +1191,15 @@ void Machine::OneCycle() {
         this->PrintPipeLineInstructions();
     }
 }
+
+void Machine::ReadMemory(int64_t address, int32_t size, int64_t *value) {
+    if (!main_memory->ReadMemory(address, size, value)) {
+        FATAL("Unable to read memory at %lx", address);
+    }
+}
+
+void Machine::WriteMemory(int64_t address, int32_t size, int64_t value) {
+    if (!main_memory->WriteMemory(address, size, value)) {
+        FATAL("Unable to write memory at %lx", address);
+    }
+}

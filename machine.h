@@ -192,6 +192,15 @@ public:
 
 class Machine {
 private:
+    bool exit_flag;
+    Memory *main_memory;
+    Instruction *regs_instr[SIZE_REG_INSTR];
+    int64_t registers[32];
+    int64_t reg_pc;
+    int64_t reg_prev_pc;
+    int64_t reg_addr;
+    int64_t heap_pointer;
+
     Instruction *FetchInstruction();
 
     void Execute(Instruction *instruction);
@@ -203,14 +212,6 @@ private:
     void SetHeapPointer(int64_t address);
 
 public:
-    bool exit_flag;
-    Memory *main_memory;
-    Instruction *regs_instr[SIZE_REG_INSTR];
-    int64_t registers[32];
-    int64_t reg_pc;
-    int64_t reg_prev_pc;
-    int64_t reg_addr;
-    int64_t heap_pointer;
 
     Machine();
 
@@ -225,6 +226,21 @@ public:
     void OneCycle();
 
     void DumpState();
+
+    void ReadMemory(int64_t address, int32_t size, int64_t *value);
+
+    void WriteMemory(int64_t address, int32_t size, int64_t value);
+
+    bool IsExit() {
+        return exit_flag;
+    }
+
+    int64_t NextToExecute() {
+        if (regs_instr[REG_INSTR_EXECUTE] == NULL)
+            return NULL;
+        else
+            return regs_instr[REG_INSTR_EXECUTE]->instr_pc;
+    }
 };
 
 #endif //RISC_V_SIMULATOR_MACHINE_H
