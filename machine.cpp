@@ -72,6 +72,23 @@ void Machine::Execute(Instruction *instruction) {
                 value_a0 = regs_instr[REG_INSTR_WRITE_BACK]->write_back_value;
                 DEBUG("Use forwarded value from AccMem: %s = %16.16lx\n", reg_strings[REG_a0], value_a0);
             }
+
+            // Load-use hazard?
+            switch (regs_instr[REG_INSTR_WRITE_BACK]->op_type) {
+                case OP_LB:
+                case OP_LH:
+                case OP_LW:
+                case OP_LWSP:
+                case OP_LD:
+                case OP_LDSP:
+                case OP_LBU:
+                case OP_LHU:
+                    stats->IncreaseCycle();
+                    stats->IncreaseStallByData();
+                    break;
+                default:
+                    break;
+            }
         }
 
         switch (instruction->op_type) {
