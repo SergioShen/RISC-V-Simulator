@@ -128,5 +128,6 @@ int main(int argc, char **argv) {
     else
         Run();
     stats->PrintStats();
+    machine->PrintCacheStats();
     return 0;
 }

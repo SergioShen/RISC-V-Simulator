@@ -11,6 +11,8 @@
 #include "utility.h"
 #include "mem.h"
 #include "instruction.h"
+#include "memory.h"
+#include "cache.h"
 
 #define REG_INSTR_DECODE 0
 #define REG_INSTR_EXECUTE 1
@@ -26,6 +28,10 @@ private:
     int64_t registers[32];                      // register file
     int64_t reg_pc;                             // pc register
     int64_t heap_pointer;                       // points to top of heap
+    MemoryForCache *memory;                     // memory for cache use
+    Cache *l1;                                  // L1 cache
+    Cache *l2;                                  // L1 cache
+    Cache *l3;                                  // L1 cache
 
     // Fetch stage of pipeline
     Instruction *FetchInstruction();
@@ -77,6 +83,8 @@ public:
 
     // Get next instruction which is going to be processed in Execute stage
     int64_t NextToExecute();
+
+    void PrintCacheStats();
 };
 
 #endif //RISC_V_SIMULATOR_MACHINE_H
