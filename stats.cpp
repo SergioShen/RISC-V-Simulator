@@ -22,6 +22,7 @@ void Stats::PrintStats() {
     printf("CPI: %.6lf\n", cpi);
     printf("Stalls caused by ctrl hazard: %ld\n", num_of_stalls_by_ctrl);
     printf("Stalls caused by data hazard: %ld\n", num_of_stalls_by_data);
+    printf("Stalls caused by memory access: %ld\n", num_of_stalls_by_memory);
 }
 
 void Stats::IncreaseInstruction() {
@@ -38,4 +39,12 @@ void Stats::IncreaseStallByCtrl() {
 
 void Stats::IncreaseStallByData() {
     num_of_stalls_by_data++;
+}
+
+void Stats::AddCycle(int cycles) {
+    this->num_of_cycles += cycles;
+}
+
+void Stats::AddStallByMemory(int32_t stalls) {
+    num_of_stalls_by_memory += stalls;
 }

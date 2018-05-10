@@ -9,6 +9,7 @@
 #include <cstring>
 #include <elf.h>
 #include "stats.h"
+#include "config.h"
 
 extern Stats *stats;
 extern char reg_strings[32][8];
@@ -16,7 +17,7 @@ extern char reg_strings[32][8];
 Instruction *Machine::FetchInstruction() {
     Instruction *instruction = new Instruction();
     int64_t instruction_value;
-    this->main_memory->ReadMemory(this->reg_pc, sizeof(int32_t), &instruction_value);
+    this->ReadMemory(this->reg_pc, sizeof(int32_t), &instruction_value);
     instruction->binary_code = (int32_t) instruction_value;
     instruction->instr_pc = reg_pc;
     instruction->decoded = false;
@@ -336,40 +337,40 @@ void Machine::AccessMemory(Instruction *instruction) {
     if (instruction != NULL) {
         switch (instruction->op_type) {
             case OP_LB:
-                this->main_memory->ReadMemory(instruction->write_back_value, 1, &instruction->write_back_value);
+                this->ReadMemory(instruction->write_back_value, 1, &instruction->write_back_value);
                 break;
             case OP_LH:
-                this->main_memory->ReadMemory(instruction->write_back_value, 2, &instruction->write_back_value);
+                this->ReadMemory(instruction->write_back_value, 2, &instruction->write_back_value);
                 break;
             case OP_LW:
             case OP_LWSP:
-                this->main_memory->ReadMemory(instruction->write_back_value, 4, &instruction->write_back_value);
+                this->ReadMemory(instruction->write_back_value, 4, &instruction->write_back_value);
                 break;
             case OP_LD:
             case OP_LDSP:
-                this->main_memory->ReadMemory(instruction->write_back_value, 8, &instruction->write_back_value);
+                this->ReadMemory(instruction->write_back_value, 8, &instruction->write_back_value);
                 break;
             case OP_LBU:
-                this->main_memory->ReadMemory(instruction->write_back_value, 1, &instruction->write_back_value);
+                this->ReadMemory(instruction->write_back_value, 1, &instruction->write_back_value);
                 instruction->write_back_value = (int64_t) ((uint8_t) instruction->write_back_value);
                 break;
             case OP_LHU:
-                this->main_memory->ReadMemory(instruction->write_back_value, 2, &instruction->write_back_value);
+                this->ReadMemory(instruction->write_back_value, 2, &instruction->write_back_value);
                 instruction->write_back_value = (int64_t) ((uint16_t) instruction->write_back_value);
                 break;
             case OP_SB:
-                this->main_memory->WriteMemory(instruction->write_back_value, 1, registers[instruction->rs2]);
+                this->WriteMemory(instruction->write_back_value, 1, registers[instruction->rs2]);
                 break;
             case OP_SH:
-                this->main_memory->WriteMemory(instruction->write_back_value, 2, registers[instruction->rs2]);
+                this->WriteMemory(instruction->write_back_value, 2, registers[instruction->rs2]);
                 break;
             case OP_SW:
             case OP_SWSP:
-                this->main_memory->WriteMemory(instruction->write_back_value, 4, registers[instruction->rs2]);
+                this->WriteMemory(instruction->write_back_value, 4, registers[instruction->rs2]);
                 break;
             case OP_SD:
             case OP_SDSP:
-                this->main_memory->WriteMemory(instruction->write_back_value, 8, registers[instruction->rs2]);
+                this->WriteMemory(instruction->write_back_value, 8, registers[instruction->rs2]);
                 break;
             default:
                 break;
@@ -401,6 +402,30 @@ Machine::Machine() {
     memset(this->registers, 0, sizeof(this->registers));
     for (int i = 0; i < SIZE_REG_INSTR; i++)
         this->regs_instr[i] = NULL;
+
+    // Build cache hierarchy
+    memory = new MemoryForCache();
+    memory->SetLatency(get_memory_latency());
+    memory->SetStats(get_zero_stats());
+
+    l1 = new Cache();
+    l1->SetLatency(get_l1_cache_latency());
+    l1->SetConfig(get_l1_cache_config());
+    l1->SetStats(get_zero_stats());
+
+    l2 = new Cache();
+    l2->SetLatency(get_l2_cache_latency());
+    l2->SetConfig(get_l2_cache_config());
+    l2->SetStats(get_zero_stats());
+
+    l3 = new Cache();
+    l3->SetLatency(get_l3_cache_latency());
+    l3->SetConfig(get_l3_cache_config());
+    l3->SetStats(get_zero_stats());
+
+    l3->SetLower(memory);
+    l2->SetLower(l3);
+    l1->SetLower(l2);
 }
 
 Machine::~Machine() {
@@ -408,6 +433,10 @@ Machine::~Machine() {
     for (int i = 0; i < SIZE_REG_INSTR; i++)
         if (this->regs_instr[i] != NULL)
             delete regs_instr[i];
+    delete memory;
+    delete l1;
+    delete l2;
+    delete l3;
 }
 
 void Machine::PrintRegisters() {
@@ -485,12 +514,28 @@ void Machine::ReadMemory(int64_t address, int32_t size, int64_t *value) {
     if (!main_memory->ReadMemory(address, size, value)) {
         FATAL("Unable to read memory at %lx", address);
     }
+    int hit, time;
+    l1->HandleRequest(address, size, 1, hit, time);
+
+    // The pipeline need to stall for time-1 cycles waiting for data from memory
+    DEBUG("Access time: %d\n", time);
+    stats->AddStallByMemory(time - 1);
+    stats->AddCycle(time - 1);
+    total_access_time += time;
 }
 
 void Machine::WriteMemory(int64_t address, int32_t size, int64_t value) {
     if (!main_memory->WriteMemory(address, size, value)) {
         FATAL("Unable to write memory at %lx", address);
     }
+    int hit, time;
+    l1->HandleRequest(address, size, 0, hit, time);
+
+    // The pipeline need to stall for time-1 cycles writing data to memory
+    DEBUG("Access time: %d\n", time);
+    stats->AddStallByMemory(time - 1);
+    stats->AddCycle(time - 1);
+    total_access_time += time;
 }
 
 bool Machine::IsExit() {
@@ -502,4 +547,34 @@ int64_t Machine::NextToExecute() {
         return NULL;
     else
         return regs_instr[REG_INSTR_EXECUTE]->instr_pc;
+}
+
+void Machine::PrintCacheStats() {
+    printf("\n****************\n");
+    StorageStats stats;
+    float miss_rate;
+    l1->GetStats(stats);
+    miss_rate = (float) stats.miss_num / stats.access_counter;
+    printf("Total L1 access time: %d cycle, access count: %d, miss rate: %.6f\n",
+           stats.access_time, stats.access_counter, miss_rate);
+    printf("        miss num: %d, replace num: %d\n", stats.miss_num, stats.replace_num);
+    printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
+
+    l2->GetStats(stats);
+    miss_rate = (float) stats.miss_num / stats.access_counter;
+    printf("Total L2 access time: %d cycle, access count: %d, miss rate: %.6f\n",
+           stats.access_time, stats.access_counter, miss_rate);
+    printf("        miss num: %d, replace num: %d\n", stats.miss_num, stats.replace_num);
+    printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
+
+    l3->GetStats(stats);
+    miss_rate = (float) stats.miss_num / stats.access_counter;
+    printf("Total L3 access time: %d cycle, access count: %d, miss rate: %.6f\n",
+           stats.access_time, stats.access_counter, miss_rate);
+    printf("        miss num: %d, replace num: %d\n", stats.miss_num, stats.replace_num);
+    printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
+
+    memory->GetStats(stats);
+    printf("Total memory access time: %d cycle, access count: %d\n", stats.access_time, stats.access_counter);
+    printf("TOTAL ACCESS TIME: %d cycle\n", total_access_time);
 }
