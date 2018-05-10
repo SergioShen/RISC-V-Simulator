@@ -30,8 +30,9 @@ private:
     int64_t heap_pointer;                       // points to top of heap
     MemoryForCache *memory;                     // memory for cache use
     Cache *l1;                                  // L1 cache
-    Cache *l2;                                  // L1 cache
-    Cache *l3;                                  // L1 cache
+    Cache *l2;                                  // L2 cache
+    Cache *l3;                                  // L3 cache
+    int64_t total_access_time;
 
     // Fetch stage of pipeline
     Instruction *FetchInstruction();

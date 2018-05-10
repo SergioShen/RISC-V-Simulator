@@ -521,6 +521,7 @@ void Machine::ReadMemory(int64_t address, int32_t size, int64_t *value) {
     DEBUG("Access time: %d\n", time);
     stats->AddStallByMemory(time - 1);
     stats->AddCycle(time - 1);
+    total_access_time += time;
 }
 
 void Machine::WriteMemory(int64_t address, int32_t size, int64_t value) {
@@ -534,6 +535,7 @@ void Machine::WriteMemory(int64_t address, int32_t size, int64_t value) {
     DEBUG("Access time: %d\n", time);
     stats->AddStallByMemory(time - 1);
     stats->AddCycle(time - 1);
+    total_access_time += time;
 }
 
 bool Machine::IsExit() {
@@ -548,12 +550,10 @@ int64_t Machine::NextToExecute() {
 }
 
 void Machine::PrintCacheStats() {
-    int64_t total_time = 0;
     printf("\n****************\n");
     StorageStats stats;
     float miss_rate;
     l1->GetStats(stats);
-    total_time += stats.access_time;
     miss_rate = (float) stats.miss_num / stats.access_counter;
     printf("Total L1 access time: %d cycle, access count: %d, miss rate: %.6f\n",
            stats.access_time, stats.access_counter, miss_rate);
@@ -561,7 +561,6 @@ void Machine::PrintCacheStats() {
     printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
 
     l2->GetStats(stats);
-    total_time += stats.access_time;
     miss_rate = (float) stats.miss_num / stats.access_counter;
     printf("Total L2 access time: %d cycle, access count: %d, miss rate: %.6f\n",
            stats.access_time, stats.access_counter, miss_rate);
@@ -569,7 +568,6 @@ void Machine::PrintCacheStats() {
     printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
 
     l3->GetStats(stats);
-    total_time += stats.access_time;
     miss_rate = (float) stats.miss_num / stats.access_counter;
     printf("Total L3 access time: %d cycle, access count: %d, miss rate: %.6f\n",
            stats.access_time, stats.access_counter, miss_rate);
@@ -577,7 +575,6 @@ void Machine::PrintCacheStats() {
     printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
 
     memory->GetStats(stats);
-    total_time += stats.access_time;
     printf("Total memory access time: %d cycle, access count: %d\n", stats.access_time, stats.access_counter);
-    printf("TOTAL ACCESS TIME: %d cycle\n", total_time);
+    printf("TOTAL ACCESS TIME: %d cycle\n", total_access_time);
 }
