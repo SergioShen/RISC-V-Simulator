@@ -551,21 +551,28 @@ void Machine::PrintCacheStats() {
     int64_t total_time = 0;
     printf("\n****************\n");
     StorageStats stats;
+    float miss_rate;
     l1->GetStats(stats);
     total_time += stats.access_time;
-    printf("Total L1 access time: %d cycle, access count: %d\n", stats.access_time, stats.access_counter);
+    miss_rate = (float) stats.miss_num / stats.access_counter;
+    printf("Total L1 access time: %d cycle, access count: %d, miss rate: %.6f\n",
+           stats.access_time, stats.access_counter, miss_rate);
     printf("        miss num: %d, replace num: %d\n", stats.miss_num, stats.replace_num);
     printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
 
     l2->GetStats(stats);
     total_time += stats.access_time;
-    printf("Total L2 access time: %d cycle, access count: %d\n", stats.access_time, stats.access_counter);
+    miss_rate = (float) stats.miss_num / stats.access_counter;
+    printf("Total L2 access time: %d cycle, access count: %d, miss rate: %.6f\n",
+           stats.access_time, stats.access_counter, miss_rate);
     printf("        miss num: %d, replace num: %d\n", stats.miss_num, stats.replace_num);
     printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
 
     l3->GetStats(stats);
     total_time += stats.access_time;
-    printf("Total L3 access time: %d cycle, access count: %d\n", stats.access_time, stats.access_counter);
+    miss_rate = (float) stats.miss_num / stats.access_counter;
+    printf("Total L3 access time: %d cycle, access count: %d, miss rate: %.6f\n",
+           stats.access_time, stats.access_counter, miss_rate);
     printf("        miss num: %d, replace num: %d\n", stats.miss_num, stats.replace_num);
     printf("        fetch num: %d, prefetch num: %d\n", stats.fetch_num, stats.prefetch_num);
 
